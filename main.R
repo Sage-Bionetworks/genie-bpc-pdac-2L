@@ -10,5 +10,3 @@ source(here('analysis', 'script', 'process_genomics.R'))
 source(here('analysis', 'script', 'create_lines.R'))
 source(here('analysis', 'script', 'evaluate_lines.R'))
 source(here('analysis', 'script', 'build_cohort.R'))
-
-source(here('analysis', 'script', 'build_cohort.R'))

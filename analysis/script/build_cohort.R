@@ -70,16 +70,19 @@ flow_track %<>% flow_record_helper(cohort, "Metastatic at 2L/3L", .)
 cohort %<>% filter(no_invest_to_index)
 flow_track %<>% flow_record_helper(cohort, "No investigational", .)
 
-library(flextable)
-flow_track %>%
-  mutate(
-    n = purrr::map_dbl(
-      .x = dat,
-      .f = nrow
-    )
-  ) %>%
-  select(-dat) %>%
-  rename(step = message) %>%
-  flextable(.) %>%
-  autofit(.)
-flow_process_wrap(flow_track)
+#
+#
+#
+# library(flextable)
+# flow_track %>%
+#   mutate(
+#     n = purrr::map_dbl(
+#       .x = dat,
+#       .f = nrow
+#     )
+#   ) %>%
+#   select(-dat) %>%
+#   rename(step = message) %>%
+#   flextable(.) %>%
+#   autofit(.)
+# flow_process_wrap(flow_track)
