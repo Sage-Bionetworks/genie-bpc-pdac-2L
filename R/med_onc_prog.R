@@ -32,8 +32,11 @@ med_onc_prog <- function(dat_med_onc, return_minimal = T) {
     mutate(
       evaluated = !(str_detect(md_ca, "does not mention cancer") |
         str_detect(md_ca, "uncertain, indeterminate")),
-      cancer = md_ca %in%
-        "Yes, the Impression/Plan states or implies there is evidence of cancer",
+      cancer = case_when(
+        str_detect(md_ca, "no evidence of cancer") ~ F,
+        str_detect(md_ca, "there is evidence of cancer") ~ T,
+        T ~ NA
+      ),
       raw_response = case_when(
         md_ca_status %in% "Progressing/Worsening/Enlarging" ~ resp_lev[1],
         md_ca_status %in% "Stable/No change" ~ resp_lev[2],
@@ -44,17 +47,25 @@ med_onc_prog <- function(dat_med_onc, return_minimal = T) {
       raw_response = factor(raw_response, levels = resp_lev)
     )
 
-  rtn |>
+  rtn <- rtn |>
     arrange(md_onc_visit_int) |>
     group_by(record_id) |>
     mutate(
-      prev_cancer = lag(cancer),
-      improvement = case_when(
+      prev_cancer = lag(cancer)
+    ) |>
+    # this step replaces NA values with the last known value.
+    fill(prev_cancer, .direction = 'down') |>
+    mutate(
+      part_resp = case_when(
         raw_response %in% "improving" ~ T,
-        is.na(prev_cancer) ~ F, # nothing to go on then.
+        T ~ F
+      ),
+      comp_resp = case_when(
+        is.na(prev_cancer) ~ F,
         prev_cancer & !cancer ~ T, # went from cancer to no cancer.
         T ~ F
       ),
+      response = part_resp | comp_resp,
       # in cancer terminology progression is worsening.
       # I know it's silly, I just work here.
       progression = case_when(
@@ -63,7 +74,8 @@ med_onc_prog <- function(dat_med_onc, return_minimal = T) {
         !prev_cancer & cancer ~ T, # went from no cancer to cancer.
         T ~ F
       )
-    )
+    ) |>
+    ungroup()
 
   if (return_minimal) {
     rtn <- rtn |>
@@ -72,7 +84,11 @@ med_onc_prog <- function(dat_med_onc, return_minimal = T) {
         record_id,
         evaluated,
         cancer,
-        raw_response
+        raw_response,
+        part_resp,
+        comp_resp,
+        response,
+        progression
       )
   }
 

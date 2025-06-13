@@ -15,11 +15,13 @@ find_complete_responses <- function(dat_img) {
     arrange(image_scan_int) |>
     mutate(
       prev_cancer = lag(cancer),
-      complete_response = prev_cancer & !cancer
+      complete_response = prev_cancer & !cancer,
+      new_lesion = !prev_cancer & cancer
     ) |>
     ungroup()
 
-  rtn <- rtn |> filter(complete_response)
+  rtn <- filter(complete_response | new_lesion) |>
+    select(-prev_cancer)
 
   return(rtn)
 }
