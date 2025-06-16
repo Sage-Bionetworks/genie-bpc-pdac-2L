@@ -32,7 +32,9 @@ status_sum %<>%
     eval = img_eval | med_onc_eval,
     prog = img_prog | med_onc_prog,
     resp = img_resp | med_onc_resp
-  )
+  ) %>%
+  replace_na(replace = list(eval = F, prog = F, resp = F))
+
 
 lot <- readr::read_rds(here('data', 'drug', 'lot.rds'))
 
@@ -40,12 +42,31 @@ reg <- readr::read_csv(
   here('data-raw', 'PANC', 'regimen_cancer_level_dataset.csv')
 )
 
-cli_abort("Need to create the regimen start variable (reference the newer data guides) and apply that to the line of therapy data before splitting into first and second lines.  Then mark the first therapy switch using the second line data, merge in the other stuff, and you can find the people who progressed within 6 weeks to 6 months.  How ghastly this all is...")
+reg <- reg |>
+  mutate(
+    # creating the analogous version of dx_reg_start_int...
+    dob_reg_start_int = pmin(
+      drugs_startdt_int_1,
+      drugs_startdt_int_2,
+      drugs_startdt_int_3,
+      drugs_startdt_int_4,
+      drugs_startdt_int_5,
+      na.rm = T
+    )
+  )
 
-lot |> 
-  select(
+lot <- left_join(
+  lot,
+  select(reg, record_id, regimen_number, dob_reg_start_int),
+  by = c('record_id', 'regimen_number'),
+  # comment:  technically record_id and regimen number are not unique.
+  # however, everyone that we're working with has one cancer diagnosis,
+  #   so they should be here.  We exploit that for simpler code.
+  relationship = 'one-to-one'
+)
 
-# There are lots of people in ehre who won't be in our final cohort, but that's OK.
+
+# There are lots of people in here who won't be in our final cohort, but that's OK.
 first_lines <- lot |>
   filter(line_of_therapy %in% 1) |>
   filter(gem_based | fluoro_based)
@@ -53,3 +74,21 @@ first_lines <- lot |>
 second_lines <- lot |>
   filter(record_id %in% first_lines$record_id) |>
   filter(line_of_therapy %in% 2)
+
+first_lines <- second_lines |>
+  select(record_id, dob_reg2_start_int = dob_reg_start_int) |>
+  left_join(
+    first_lines,
+    y = _,
+    by = 'record_id'
+  )
+
+
+first_evals <- filter_times_by_ref(
+  dat = filter(status_sum, eval)
+  ref_dat = first_lines,
+  t_col = 'dob_eval_days',
+  t_ref_col = 'dob_reg_start_int',
+  lower_int = 0,
+  upper_int = 26 * 7
+)
