@@ -1,5 +1,5 @@
 ---
-title: "Astellus 2L PDAC"
+title: "Astellas 2L PDAC"
 subtitle: "Feasibility report"
 author: "Alex Paynter"
 date: "`r format(Sys.Date(), '%d %b %Y')`"
@@ -31,7 +31,7 @@ purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 
 ## Introduction
 
-This report addresses the feasibility of an Astellus study of second line therapies in pancreatic ductal adenocarcinoma.  We will leverage the existing curation in the pancreatic BPC cohort to study the questions they've outlined.
+This report addresses the feasibility of an Astellas study of second line therapies in pancreatic ductal adenocarcinoma.  We will leverage the existing curation in the pancreatic BPC (v1.2-consoritum) cohort to study the questions they've outlined.
 
 ## Attrition table
 
