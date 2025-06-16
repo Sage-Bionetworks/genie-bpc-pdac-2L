@@ -15,7 +15,52 @@ img <- readr::read_csv(
 
 med_onc_prog(med_onc)
 
-img %>% glimpse
+# Seems about right on med onc... test cases:
+med_onc_prog(med_onc, impute_longitudinal = T) |>
+  count(progression)
+med_onc_prog(med_onc, impute_longitudinal = F) |>
+  count(progression)
+
+med_onc_prog(med_onc, impute_longitudinal = T) |>
+  count(response)
+med_onc_prog(med_onc, impute_longitudinal = F) |>
+  count(response)
+
+img |> img_prog(impute_longitudinal = F)
+
+
+img |> img_prog(impute_longitudinal = T)
+
+img |>
+  img_keyed_type_site() |>
+  group_by(record_id, site, image_scan_type) |>
+  arrange_by(image_scan_int) |>
+  mutate(
+    prev_cancer = lag(cancer)
+  ) |>
+  # this step replaces NA values with the last known value.
+  fill(prev_cancer, .direction = 'down') |>
+  mutate(
+    comp_resp = case_when(
+      is.na(prev_cancer) ~ F,
+      prev_cancer & !cancer ~ T
+    ),
+    long_progression = case_when(
+      is.na(prev_cancer) ~ F,
+      !prev_cancer & cancer ~ T,
+      T ~ F
+    )
+  )
+
+
+#
+#   group_by(record_id, site, image_scan_type) |>
+#   mutate(
+#     prev_cancer = lag(cancer)
+#   ) |>
+#   # this step replaces NA values with the last known value.
+#   fill(prev_cancer, .direction = 'down') |>
+#   mutate(
 
 img |>
   select(record_id, image_scan_int, matches("image_casite")) |>

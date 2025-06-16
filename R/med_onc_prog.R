@@ -1,4 +1,8 @@
-med_onc_prog <- function(dat_med_onc, return_minimal = T) {
+med_onc_prog <- function(
+  dat_med_onc,
+  impute_longitudinal = T,
+  return_minimal = T
+) {
   # In this dataset there are no duplicates reports for one
   #  person on one day, but let's add a check to bake in that assumption.
   chk_unique <- dat_med_onc |>
@@ -20,14 +24,6 @@ med_onc_prog <- function(dat_med_onc, return_minimal = T) {
       md_ca_status
     )
 
-  # shorter names for the response levels
-  resp_lev <- c(
-    'worsened',
-    'stable',
-    'mixed',
-    'improved'
-  )
-
   rtn <- rtn |>
     mutate(
       evaluated = !(str_detect(md_ca, "does not mention cancer") |
@@ -36,16 +32,9 @@ med_onc_prog <- function(dat_med_onc, return_minimal = T) {
         str_detect(md_ca, "no evidence of cancer") ~ F,
         str_detect(md_ca, "there is evidence of cancer") ~ T,
         T ~ NA
-      ),
-      raw_response = case_when(
-        md_ca_status %in% "Progressing/Worsening/Enlarging" ~ resp_lev[1],
-        md_ca_status %in% "Stable/No change" ~ resp_lev[2],
-        md_ca_status %in% "Mixed" ~ resp_lev[3],
-        md_ca_status %in% "Improving/Responding" ~ resp_lev[4],
-        T ~ NA_character_
-      ),
-      raw_response = factor(raw_response, levels = resp_lev)
-    )
+      )
+    ) |>
+    status_processor(col_name = "md_ca_status")
 
   rtn <- rtn |>
     arrange(md_onc_visit_int) |>
@@ -62,7 +51,7 @@ med_onc_prog <- function(dat_med_onc, return_minimal = T) {
       ),
       comp_resp = case_when(
         is.na(prev_cancer) ~ F,
-        prev_cancer & !cancer ~ T, # went from cancer to no cancer.
+        prev_cancer & !cancer ~ {{ impute_longitudinal }}, # went from cancer to no cancer.
         T ~ F
       ),
       response = part_resp | comp_resp,
@@ -71,7 +60,7 @@ med_onc_prog <- function(dat_med_onc, return_minimal = T) {
       progression = case_when(
         raw_response %in% "worsening" ~ T,
         is.na(prev_cancer) ~ F,
-        !prev_cancer & cancer ~ T, # went from no cancer to cancer.
+        !prev_cancer & cancer ~ {{ impute_longitudinal }}, # went from no cancer to cancer.
         T ~ F
       )
     ) |>

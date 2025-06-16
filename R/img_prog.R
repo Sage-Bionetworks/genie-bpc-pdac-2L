@@ -14,32 +14,51 @@ img_prog <- function(
     # Arrange by record_id and scan date
     arrange(record_id, image_scan_int)
 
-  resp_lev <- c(
-    'worsened',
-    'stable',
-    'mixed',
-    'improved'
-  )
-
   rtn <- rtn |>
     mutate(
       # as it stands, we're sort of imbedding the assumption that any scan is an evaluation for cancer.
       evaluated = !(str_detect(image_ca, "does not mention cancer") |
         str_detect(image_ca, "uncertain, indeterminate")),
-      cancer = image_ca %in%
-        "Yes, the Impression/Plan states or implies there is evidence of cancer",
-      raw_response = case_when(
-        image_overall %in% "Progressing/Worsening/Enlarging" ~ resp_lev[1],
-        image_overall %in% "Stable/No change" ~ resp_lev[2],
-        image_overall %in% "Mixed" ~ resp_lev[3],
-        image_overall %in% "Improving/Responding" ~ resp_lev[4],
-        T ~ NA_character_
-      ),
-      raw_response = factor(raw_response, levels = resp_lev)
-    )
+      cancer = case_when(
+        str_detect(image_ca, "no evidence of cancer") ~ F,
+        str_detect(image_ca, "there is evidence of cancer") ~ T,
+        T ~ NA
+      )
+    ) |>
+    status_processor(dat = _, col_name = "image_overall")
 
   if (impute_longitudinal) {
-    # do something.
+    img_long <- dat_img |> img_keyed_type_site(.)
+
+    sum_long <- img_long |>
+      group_by(record_id, site, image_scan_type) |>
+      arrange_by(image_scan_int) |>
+      mutate(
+        prev_cancer = lag(cancer)
+      ) |>
+      # this step replaces NA values with the last known value.
+      fill(prev_cancer, .direction = 'down') |>
+      mutate(
+        long_comp_resp = case_when(
+          is.na(prev_cancer) ~ F,
+          prev_cancer & !cancer ~ T
+        ),
+        long_progression = case_when(
+          is.na(prev_cancer) ~ F,
+          !prev_cancer & cancer ~ T,
+          T ~ F
+        )
+      ) |>
+      ungroup()
+
+    # collapse over sites/type for each day - any sign is taken as a sign.
+    sum_long <- sum_long |>
+      group_by(record_id, image_scan_int) |>
+      summarize(
+        long_comp_resp = any(long_comp_resp, na.rm = T),
+        long_progression = any(long_progression, na.rm = T),
+        .groups = 'drop'
+      )
   }
 
   return(rtn)

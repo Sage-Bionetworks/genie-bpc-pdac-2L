@@ -34,9 +34,11 @@ img_keyed_type_site <- function(
       cancer = case_when(
         str_detect(image_ca, "no evidence of cancer") ~ F,
         str_detect(image_ca, "there is evidence of cancer") ~ T,
+        # categories left out of the above: equivocal about cancer, and no mention of cancer.
         T ~ NA
       )
-    )
+    ) |>
+    status_processor(col_name = "image_overall")
 
   # Put the keys up front for clarity
   rtn <- rtn |>
