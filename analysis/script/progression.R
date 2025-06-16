@@ -1,3 +1,5 @@
+IMPUTE_LONGTIUDINAL <- F
+
 library(fs)
 library(purrr)
 library(here)
@@ -13,90 +15,30 @@ img <- readr::read_csv(
   here('data-raw', 'PANC', 'imaging_level_dataset.csv')
 )
 
-med_onc_prog(med_onc)
+med_onc_sum <- med_onc_prog(
+  med_onc,
+  impute_longitudinal = IMPUTE_LONGTIUDINAL
+)
 
-# Seems about right on med onc... test cases:
-med_onc_prog(med_onc, impute_longitudinal = T) |>
-  count(progression)
-med_onc_prog(med_onc, impute_longitudinal = F) |>
-  count(progression)
+img_sum <- img_prog(
+  img,
+  impute_longitudinal = IMPUTE_LONGTIUDINAL
+)
 
-med_onc_prog(med_onc, impute_longitudinal = T) |>
-  count(response)
-med_onc_prog(med_onc, impute_longitudinal = F) |>
-  count(response)
+# interestingly there is almost NO overlap on when these happen.
+# probably some delay in reporting imaging?  Hard to say.
+status_sum <- combine_med_onc_img_sum(med_onc_sum, img_sum)
 
-img |> img_prog(impute_longitudinal = F)
-
-
-img |> img_prog(impute_longitudinal = T)
-
-img |>
-  img_keyed_type_site() |>
-  group_by(record_id, site, image_scan_type) |>
-  arrange_by(image_scan_int) |>
+# Taking the "OR" version for progression/response.
+status_sum %<>%
   mutate(
-    prev_cancer = lag(cancer)
-  ) |>
-  # this step replaces NA values with the last known value.
-  fill(prev_cancer, .direction = 'down') |>
-  mutate(
-    comp_resp = case_when(
-      is.na(prev_cancer) ~ F,
-      prev_cancer & !cancer ~ T
-    ),
-    long_progression = case_when(
-      is.na(prev_cancer) ~ F,
-      !prev_cancer & cancer ~ T,
-      T ~ F
-    )
+    eval = img_eval | med_onc_eval,
+    prog = img_prog | med_onc_prog,
+    resp = img_resp | med_onc_resp
   )
 
+lot <- readr::read_rds(here('data', 'drug', 'lot.rds'))
 
-#
-#   group_by(record_id, site, image_scan_type) |>
-#   mutate(
-#     prev_cancer = lag(cancer)
-#   ) |>
-#   # this step replaces NA values with the last known value.
-#   fill(prev_cancer, .direction = 'down') |>
-#   mutate(
-
-img |>
-  select(record_id, image_scan_int, matches("image_casite")) |>
-  pivot_longer(
-    cols = -c(record_id, image_scan_int),
-    names_to = "var",
-    values_to = "site"
-  ) |>
-  filter(!is.na(site)) |>
-  count(site, sort = T)
-
-img |> count(image_scan_type)
-
-img |> count(image_ca)
-
-img |>
-  mutate(
-    ref_scan_known = !is.na(image_ref_scan_int),
-    image_ca = str_sub(image_ca, 1, 10)
-  ) |>
-  tabyl(
-    ref_scan_known,
-    image_ca
-  )
-
-
-img |>
-  select(record_id, image_ca, image_scan_int, matches("image_casite")) |>
-  filter(str_detect(image_ca, "No,")) |>
-  pivot_longer(
-    cols = -c(record_id, image_ca, image_scan_int),
-    names_to = "var",
-    values_to = "site"
-  ) |>
-  filter(!is.na(site)) |>
-  count(site, sort = T)
-
-
-img_prog(img)
+first_lines <- lot |>
+  filter(line_of_therapy %in% 1) |>
+  

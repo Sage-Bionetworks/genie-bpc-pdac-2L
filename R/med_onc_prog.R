@@ -44,6 +44,7 @@ med_onc_prog <- function(
     ) |>
     # this step replaces NA values with the last known value.
     fill(prev_cancer, .direction = 'down') |>
+    ungroup() |>
     mutate(
       part_resp = case_when(
         raw_response %in% "improving" ~ T,
@@ -63,14 +64,14 @@ med_onc_prog <- function(
         !prev_cancer & cancer ~ {{ impute_longitudinal }}, # went from no cancer to cancer.
         T ~ F
       )
-    ) |>
-    ungroup()
+    )
 
   if (return_minimal) {
     rtn <- rtn |>
       select(
         cohort,
         record_id,
+        md_onc_visit_int,
         evaluated,
         cancer,
         raw_response,

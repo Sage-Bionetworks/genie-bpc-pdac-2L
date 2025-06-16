@@ -5,6 +5,7 @@ img_prog <- function(
 ) {
   rtn <- dat_img |>
     select(
+      cohort,
       record_id,
       scan_number,
       image_scan_int,
@@ -28,11 +29,11 @@ img_prog <- function(
     status_processor(dat = _, col_name = "image_overall")
 
   if (impute_longitudinal) {
-    img_long <- dat_img |> img_keyed_type_site(.)
+    img_long <- dat_img |> img_keyed_type_site()
 
     sum_long <- img_long |>
       group_by(record_id, site, image_scan_type) |>
-      arrange_by(image_scan_int) |>
+      arrange(image_scan_int) |>
       mutate(
         prev_cancer = lag(cancer)
       ) |>
@@ -58,6 +59,56 @@ img_prog <- function(
         long_comp_resp = any(long_comp_resp, na.rm = T),
         long_progression = any(long_progression, na.rm = T),
         .groups = 'drop'
+      )
+  } else {
+    # next step is merging, this blank tibble will result in NAs.
+    sum_long <- tibble(
+      record_id = character(0),
+      image_scan_int = double(0),
+      long_comp_resp = logical(0),
+      long_progression = logical(0)
+    )
+  }
+
+  rtn <- left_join(
+    rtn,
+    sum_long,
+    by = c('record_id', 'image_scan_int')
+  )
+
+  rtn <- rtn |>
+    mutate(
+      part_resp = case_when(
+        raw_response %in% "improving" ~ T,
+        T ~ F
+      ),
+      comp_resp = case_when(
+        is.na(long_comp_resp) ~ F, # case if impute_longitudinal = F.
+        T ~ long_comp_resp
+      ),
+      response = part_resp | comp_resp,
+      # in cancer terminology progression is worsening.
+      # I know it's silly, I just work here.
+      progression = case_when(
+        raw_response %in% "worsening" ~ T,
+        is.na(long_comp_resp) ~ F,
+        T ~ long_comp_resp
+      )
+    )
+
+  if (return_minimal) {
+    rtn <- rtn |>
+      select(
+        cohort,
+        record_id,
+        image_scan_int,
+        evaluated,
+        cancer,
+        raw_response,
+        part_resp,
+        comp_resp,
+        response,
+        progression
       )
   }
 
