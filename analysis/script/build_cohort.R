@@ -11,13 +11,20 @@ cohort <- ca_ind
 flow_track <- flow_record_helper(cohort, "BPC PANC v1.2")
 
 
-dmet_times <- get_dmet_time(ca_ind)
-cohort <- left_join(
-  select(dmet_times, record_id, ca_seq),
-  cohort,
-  by = c('record_id', 'ca_seq')
+cpt <- readr::read_csv(
+  here('data-raw', 'PANC', 'cancer_panel_test_level_dataset.csv')
 )
-flow_track %<>% flow_record_helper(cohort, "Met dx. (anytime)", .)
+# my google research tells me that these two are PDAC, while PAAC and UCP are not:
+cohort <- cpt %>%
+  filter(cpt_oncotree_code %in% c('PAAD', 'PAASC')) %>%
+  select(record_id, ca_seq) %>%
+  distinct(.) %>%
+  inner_join(
+    .,
+    cohort,
+    by = c('record_id', 'ca_seq')
+  )
+flow_track %<>% flow_record_helper(cohort, "PDAC tumor", .)
 
 
 cohort %<>%
@@ -27,6 +34,14 @@ flow_track %<>% flow_record_helper(cohort, "US sites only", .)
 cohort %<>% filter(ca_seq %in% 0) # very few with ca_seq = 1 (~28)
 flow_track %<>% flow_record_helper(cohort, "Only one cancer", .)
 
+
+dmet_times <- get_dmet_time(ca_ind)
+cohort <- inner_join(
+  select(dmet_times, record_id, ca_seq),
+  cohort,
+  by = c('record_id', 'ca_seq')
+)
+flow_track %<>% flow_record_helper(cohort, "Met dx. (anytime)", .)
 
 sample_kras_g12d <- readr::read_rds(
   here('data', 'genomic', 'samp_kras_g12d.rds')
@@ -79,4 +94,8 @@ flow_track %<>% flow_record_helper(cohort, "Documented prog after 1L", .)
 readr::write_rds(
   flow_track,
   here('data', 'flow_track.rds')
+)
+readr::write_rds(
+  cohort,
+  here('data', 'cohort.rds')
 )
