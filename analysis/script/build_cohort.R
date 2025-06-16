@@ -70,19 +70,13 @@ flow_track %<>% flow_record_helper(cohort, "Metastatic at 2L/3L", .)
 cohort %<>% filter(no_invest_to_index)
 flow_track %<>% flow_record_helper(cohort, "No investigational", .)
 
-#
-#
-#
-# library(flextable)
-# flow_track %>%
-#   mutate(
-#     n = purrr::map_dbl(
-#       .x = dat,
-#       .f = nrow
-#     )
-#   ) %>%
-#   select(-dat) %>%
-#   rename(step = message) %>%
-#   flextable(.) %>%
-#   autofit(.)
-# flow_process_wrap(flow_track)
+
+prog_flags <- readr::read_rds(here('data', 'prog_flags.rds'))
+prog_flags %<>% filter(prog_in_range)
+cohort %<>% filter(record_id %in% prog_flags$record_id)
+flow_track %<>% flow_record_helper(cohort, "Documented prog after 1L", .)
+
+readr::write_rds(
+  flow_track,
+  here('data', 'flow_track.rds')
+)
