@@ -35,3 +35,17 @@ shawn_g12d_count %>%
 ca_ind %>%
   filter(record_id %in% 'GENIE-MSK-P-0019389') %>%
   glimpse
+
+non_pdac_record_id <- cpt %>%
+  filter(cpt_oncotree_code %in% c('PAAC', 'UCP')) %>%
+  pull(record_id)
+
+cpt %>%
+  filter(record_id %in% non_pdac_record_id) %>%
+  group_by(record_id) %>%
+  summarize(
+    oncotrees = paste(cpt_oncotree_code, collapse = ", ")
+  ) %>%
+  group_by(oncotrees) %>%
+  sample_n(3, replace = T)
+View(.)

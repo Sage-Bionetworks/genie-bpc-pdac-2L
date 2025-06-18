@@ -60,13 +60,14 @@ flow_track_ft
 
 Details:
 
-- **Met dx. (anytime)** Limits to those who had a metastatic diagnosis at some point.  We'll check that their index therapy is in the metastatic state later.
+- **PDAC tumor** - At least one sample had the oncotree code for Pancreatic Adenocarcinoma (PAAD) or Adenosquamous Carcinoma of the Pancreas (PAASC), leaving out anyone with only Acinar Cell Carcinoma of the Pancreas (PAAC) and Undifferentiated Carcinoma of the Pancreas (UCP).
 - **US sites only** Eliminated UHN from the cohort.
 - **Only one cancer** The only cancer these people had is the pancreatic cancer that qualifies them for the cohort.  Only about 30 people had multiple cancers with pancreatic first, so it's almost certainly not worth it to open that can of worms.
+- **Met dx. (anytime)** Limits to those who had a metastatic diagnosis at some point.  We'll check that their index therapy is in the metastatic state later.
 - **KRAS G12D+** Had the mutation of interest in at least one NGS test.
 - **1L gem/5FU-based** - The first line of therapy includes either gemcitabine or 5-FU (Fluorouracil).  Using the wording in inclusion criterion #3 from the protocol, **lines of therapy start with this exposure even if the exposure is before metastasis**.
 - **Metastatic at 2L/3L** - the person is metastatic at the index therapy, which is either one or two therapies after the gem/5fu exposure.
-- **No investigational agents** - the person had no investigations agents included in any therapies from the gem/5-FU to the index therapy.
+- **No investigational agents** - the person had no investigational agents included in any therapies from the gem/5-FU to the index therapy.
 - **Documented prog after 1L** - see section below.
   - Alternate to consider:  Everyone in the cohort did another therapy, you could argue that this could just be skipped if therapy is a sign of progression.
 
