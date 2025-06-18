@@ -4,7 +4,25 @@ library(fs)
 library(purrr)
 library(here)
 purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
-cohort <- readr::read_rds(here('data', 'cohort.rds'))
+
+# Create a dataset which has the verified and non-verified progression
+#   cohorts stacked.  The people in the verified cohort will obviously
+#   be in both.
+cohort_prog_not_verified <- readr::read_rds(here(
+  'data',
+  'cohort_prog_not_verified.rds'
+))
+cohort_prog_verified <- readr::read_rds(here(
+  'data',
+  'cohort_prog_verified.rds'
+))
+cohort <- cohort_prog_not_verified %>%
+  mutate(
+    prog_group = case_when(
+      record_id %in% cohort_prog_verified$record_id ~ "Prog. verified",
+      record_id %in% cohort_prog_not_verified$record_id ~ "Prog. assumed"
+    )
+  )
 
 cpt <- readr::read_csv(
   here('data-raw', 'PANC', 'cancer_panel_test_level_dataset.csv')
@@ -12,6 +30,7 @@ cpt <- readr::read_csv(
 
 dat_surv <- cohort |>
   select(
+    prog_group,
     record_id,
     ca_seq,
     stage_dx_iv,
@@ -22,7 +41,10 @@ dat_surv <- cohort |>
     index_line
   )
 
-first_cpt <- get_first_cpt(ca_ind_dat = cohort, cpt_dat = cpt)
+first_cpt <- get_first_cpt(
+  ca_ind_dat = distinct(select(cohort, record_id, ca_seq)),
+  cpt_dat = cpt
+)
 
 dat_surv <- left_join(
   dat_surv,
@@ -42,7 +64,7 @@ dat_surv <- dat_surv |>
     x = _,
     y = lot,
     by = c('record_id', index_line = "line_of_therapy"),
-    relationship = 'one-to-one'
+    relationship = 'many-to-one' # now that we can have two copies of one person.
   ) |>
   left_join(
     x = _,
@@ -55,7 +77,7 @@ dat_surv <- dat_surv |>
       tt_os_g_days
     ),
     by = c('record_id', 'ca_seq', 'regimen_number'),
-    relationship = 'one-to-one'
+    relationship = 'many-to-one' # now that we can have two copies of one person.
   )
 
 dat_surv %<>%
@@ -88,14 +110,15 @@ surv_obj_os <- with(
 
 gg_os <- plot_one_survfit(
   dat = dat_surv,
-  surv_form = surv_obj_os ~ 1,
+  surv_form = surv_obj_os ~ prog_group,
   plot_title = "OS from initiation of 2L therapy",
   plot_subtitle = "Adjusted for delayed entry (independent)",
   x_breaks = seq(0, 500, by = 3),
   x_title = "Months",
   x_exp = 0,
-  add_ci = T
+  pal = c('#ee7733', '#0077bb')
 ) +
+  add_confidence_interval(type = 'ribbon') +
   coord_cartesian(xlim = c(0, 3 * 12))
 
 model_bundle <- list(
@@ -105,9 +128,18 @@ model_bundle <- list(
 
 readr::write_rds(
   model_bundle,
-  here('data', 'survival', 'main_model_bundle.rds')
+  here('data', 'survival', 'prog_compare_bundle.rds')
 )
 
 # Relevant comparator:
 # https://pmc.ncbi.nlm.nih.gov/articles/PMC6962478/
 # 7.3 mo (5.3, 9.3)
+
+# Create survival fit object
+surv_fit <- survfit(surv_obj_os ~ prog_group, data = dat_surv)
+
+surv_fit %>%
+  summary %>%
+  `$`(., 'table') %>%
+  as_tibble(., rownames = 'group') %>%
+  rename(lower = `0.95LCL`, upper = `0.95UCL`)

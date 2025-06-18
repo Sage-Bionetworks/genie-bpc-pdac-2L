@@ -9,8 +9,7 @@ plot_one_survfit <- function(
   risktable_font_size = 3.5,
   x_exp = 0.15,
   x_breaks = seq(0, 100, by = 2.5),
-  force_color = NULL,
-  add_ci = F
+  force_color = NULL
 ) {
   gg <- survfit2(surv_form, data = dat)
 
@@ -19,11 +18,6 @@ plot_one_survfit <- function(
     gg %<>% ggsurvfit(color = force_color)
   } else {
     gg %<>% ggsurvfit()
-  }
-
-  if (add_ci) {
-    gg <- gg +
-      add_confidence_interval(alpha = 0.5)
   }
 
   gg <- gg +
