@@ -12,4 +12,13 @@ source(here('analysis', 'script', 'evaluate_lines.R'))
 source(here('analysis', 'script', 'progression.R'))
 source(here('analysis', 'script', 'build_cohort.R'))
 
-# after this render the analysis/reports/astellas.qmd file, code to automate coming later on.
+quarto::quarto_render(
+  input = 'analysis/report/cohort-build.qmd'
+)
+fs::file_move(
+  path = 'analysis/report/bpc-breast-surv-itables.html',
+  new_path = 'output/bpc-breast-surv-itables.html'
+)
+
+source(here('analysis', 'script', 'survival_main.R'))
+source(here('analysis', 'script', 'survival_verified_prog.R'))

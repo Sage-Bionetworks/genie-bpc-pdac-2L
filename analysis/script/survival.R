@@ -69,18 +69,45 @@ dat_surv <- remove_trunc_gte_event(
   event_var = 'tt_os_g_days'
 )
 
+# months are a really stupid unit to use, but here we go:
+dat_surv %<>%
+  mutate(
+    reg_cpt_mos = reg_cpt_days / 30.4,
+    tt_os_g_mos = tt_os_g_days / 30.4
+  )
+
+
 surv_obj_os <- with(
   dat_surv,
   Surv(
-    time = reg_cpt_days,
-    time2 = tt_os_g_days,
+    time = reg_cpt_mos,
+    time2 = tt_os_g_mos,
     event = os_g_status
   )
 )
 
-gg_os_fmr_ddr <- plot_one_survfit(
-  dat = dft_met_ddr_surv,
-  surv_form = surv_obj_os_fmr ~ ddr_disp,
-  plot_title = "OS from first line platinum chemo",
-  plot_subtitle = "Adjusted for (independent) delayed entry"
+gg_os <- plot_one_survfit(
+  dat = dat_surv,
+  surv_form = surv_obj_os ~ 1,
+  plot_title = "OS from initiation of 2L therapy",
+  plot_subtitle = "Adjusted for delayed entry (independent)",
+  x_breaks = seq(0, 500, by = 3),
+  x_title = "Months",
+  x_exp = 0,
+  add_ci = T
+) +
+  coord_cartesian(xlim = c(0, 3 * 12))
+
+model_bundle <- list(
+  dat_surv = dat_surv,
+  gg_os = gg_os
 )
+
+readr::write_rds(
+  model_bundle,
+  here('data', 'survival', 'main_model_bundle.rds')
+)
+
+# Relevant comparator:
+# https://pmc.ncbi.nlm.nih.gov/articles/PMC6962478/
+# 7.3 mo (5.3, 9.3)

@@ -1,4 +1,5 @@
-IMPUTE_LONGTIUDINAL <- T
+# Note on longitudinal imputation for imaging and med onc:
+# I changed this to FALSE for both, because it requires fewer assumptions and less explanation, now that this is situated as a sensitivity analysis.
 
 library(fs)
 library(purrr)
@@ -14,12 +15,12 @@ img <- readr::read_csv(
 
 med_onc_sum <- med_onc_prog(
   med_onc,
-  impute_longitudinal = IMPUTE_LONGTIUDINAL
+  impute_longitudinal = F
 )
 
 img_sum <- img_prog(
   img,
-  impute_longitudinal = IMPUTE_LONGTIUDINAL
+  impute_longitudinal = F
 )
 
 # interestingly there is almost NO overlap on when these happen.

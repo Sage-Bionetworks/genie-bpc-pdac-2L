@@ -35,7 +35,7 @@ This report addresses the feasibility of an Astellas study of second line therap
 
 ## Attrition table
 
-We'll show the table first, and detailed explanations follow below.  Each step in the table is cumulative, meaning that the second row states the number who meet the conditions in the first and second rows.
+We'll show the table first, and detailed explanations follow below.  Each step in the table is cumulative, meaning that the second row states the number who meet the conditions in the first and second rows.  The last row is only used for the sensitivity analysis.  In the primary analysis, we assume everyone has progressed because they had a second line therapy (meaning they moved on from the first line).
 
 ```{r}
 flow_track <- readr::read_rds(
@@ -50,7 +50,8 @@ flow_track_ft <- flow_track %>%
   theme_booktabs() %>%
   align(j = "n", align = "right") %>%
   fontsize(size = 10) %>%
-  autofit()
+  autofit() %>%
+  italic(i = nrow(flow_track), j = 1, italic = T) 
 ```
 
 ```{r}
@@ -89,7 +90,7 @@ If we lose the longitudinal inference then the bottom number goes from about ~11
 
 ```{r}
 lot <- readr::read_rds(here('data', 'drug', 'lot.rds'))
-cohort <- readr::read_rds(here('data', 'cohort.rds'))
+cohort <- readr::read_rds(here('data', 'cohort_prog_not_verified.rds'))
 ```
 
 The following table shows all the first line (gem/5-FU) therapies:

@@ -86,6 +86,12 @@ cohort %<>% filter(no_invest_to_index)
 flow_track %<>% flow_record_helper(cohort, "No investigational", .)
 
 
+readr::write_rds(
+  cohort,
+  here('data', 'cohort_prog_not_verified.rds')
+)
+
+
 prog_flags <- readr::read_rds(here('data', 'prog_flags.rds'))
 prog_flags %<>% filter(prog_in_range)
 cohort %<>% filter(record_id %in% prog_flags$record_id)
@@ -97,5 +103,5 @@ readr::write_rds(
 )
 readr::write_rds(
   cohort,
-  here('data', 'cohort.rds')
+  here('data', 'cohort_prog_verified.rds')
 )
