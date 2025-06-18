@@ -18,7 +18,7 @@ pts_no_prog <- flow_track %>%
   filter(str_detect(message, "No investigational")) %>%
   pull(dat) %>%
   .[[1]]
-pts_no_prog %>% filter(!(record_id %in% pts_prog$record_id))
+pts_no_prog %<>% filter(!(record_id %in% pts_prog$record_id))
 
 pts_prog <- pts_prog$record_id
 pts_no_prog <- pts_no_prog$record_id
