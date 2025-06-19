@@ -1,5 +1,5 @@
 ---
-title: "Astellas 2L PDAC"
+title: "Astellas metastatic PDAC"
 subtitle: "Feasibility report"
 author: "Alex Paynter"
 date: "`r format(Sys.Date(), '%d %b %Y')`"
@@ -26,6 +26,26 @@ library(fs)
 library(purrr)
 library(here)
 purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
+```
+
+
+```{r}
+dt_wrapper <- function(x, cap = NULL, font.size = '10pt', page_length = 10) {
+  DT::datatable(
+    x,
+    style = "bootstrap4",
+    fillContainer = F,
+    rownames = F,
+    caption = cap,
+    options=list(
+      initComplete = htmlwidgets::JS(
+        "function(settings, json) {",
+        paste0("$(this.api().table().container()).css({'font-size': '", font.size, "'});"),
+        "}"),
+      pageLength = page_length
+    ) 
+  )
+}
 ```
 
 
@@ -93,7 +113,7 @@ We begin counting regimens as lines of therapy when either of the following happ
 
 Additionally, we do not count consecutive regimens using the same drugs as a new line of therapy.  For example, if a patient's first three captured regimens are FOLFIRINOX, FOLFIRINOX, Gemcitabine + Nabpaclitaxel, then we would say their first line is FOLFIRINOX and the second line is Gemcitabine + Nabpaclitaxel.  That is, the second second administration of FOLFIRINOX is not a new line but the continuation of an old line.
 
-If desired, we can expand this concept to say that similar regimens 
+If desired, we can expand this concept to say that similar regimens do not count as new lines.  For example, if someone goes from FOLFIRINOX to FOLFOX you could argue this dropping one for toxicity rather than a new line. We have not done this today because it requires detailed decisions.
 
 ```{r}
 lot <- readr::read_rds(here('data', 'drug', 'lot.rds'))
@@ -104,17 +124,16 @@ The following table shows all the first line (gem/5-FU) therapies:
 
 ```{r}
 #| include: true
-library(DT)
+
 lot %>%
   filter(record_id %in% cohort$record_id) %>%
   filter(line_of_therapy %in% 1) %>%
   count(regimen_drugs, sort = TRUE) %>%
-  datatable(options = list(
-    pageLength = 5,
-    scrollX = TRUE
-  ),
-  caption = "Regimens for the Gem/5-FU exposure (1L)",
-  rownames = FALSE)
+  dt_wrapper(
+    .,
+    cap = "Regimens for the Gem/5-FU exposure (1L)",
+    page_length = 10
+  )
 ```
 
 This table shows the therapies used in the index line (either 2L or 3L):
@@ -127,22 +146,23 @@ cohort %>%
   left_join(., select(lot, record_id, line_of_therapy, regimen_drugs),
             by = c('record_id', 'line_of_therapy')) %>% 
   count(regimen_drugs, sort = TRUE) %>%
-  datatable(options = list(
-    pageLength = 5,
-    scrollX = TRUE
-  ),
-  caption = "Regimens for index therapy (2L/3L)",
-  rownames = FALSE)
+  dt_wrapper(
+    .,
+    cap = "Regimens for index therapy (2L/3L)",
+    page_length = 10
+  )
 ```
 
 **Note:** Lots of these are Gem and 5-FU, too, which may or may not be what the sponsor was expecting.
 
-## Issues
+## Miscellaneous notes
 
-- **Kelli?** I took a stab at the tumor types that qualify as PDAC.  These are the four listed (I think the first two are PDAC - confirmif you know):
+- Using oncotree codes, we counted PAAD and PAASC as PDAC while PAAC and UCP are not.  Here are the four types present in the data:
     - Pancreatic Adenocarcinoma (PAAD)
     - Adenosquamous Carcinoma of the Pancreas (PAASC)
     - Acinar Cell Carcinoma of the Pancreas (PAAC)
     - Undifferentiated Carcinoma of the Pancreas (UCP)
-- We have not looked for duplicate or variant-of regimens which may follow the 1L.  For example, if someone does gem carbo after gem cis lots of people would not consider that a new line, but it may present that way in PRISSMM.
-- I'll probably look at some of the people eliminated/kept in the last step to make sure nothing went wrong, there's a lot of code hidden in that compared to the rest of the steps.
+- Two changes to consider in the progression window (numbers are rough because I made some small changes after checking these, and the calculations were done hackily):
+    - About +10 cases if we use a window of [1,182] days rather than [42, 182] days.
+    - About +35 cases if we use a window of [42, 364] days rather than [42, 182] days.
+    - The latter is surprising, but recall that progression from gem/5-FU may occur before metastasis in these people, so one year may not be that stunning.

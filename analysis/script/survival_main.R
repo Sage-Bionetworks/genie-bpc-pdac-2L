@@ -86,17 +86,22 @@ surv_obj_os <- with(
   )
 )
 
+
 gg_os <- plot_one_survfit(
   dat = dat_surv,
   surv_form = surv_obj_os ~ 1,
-  plot_title = "OS from initiation of 2L therapy",
+  plot_title = paste0(
+    "OS from initiation of index therapy (n=",
+    nrow(dat_surv),
+    ")"
+  ),
   plot_subtitle = "Adjusted for delayed entry (independent)",
   x_breaks = seq(0, 500, by = 3),
   x_title = "Months",
   x_exp = 0
 ) +
   add_confidence_interval() +
-  coord_cartesian(xlim = c(0, 3 * 12))
+  coord_cartesian(xlim = c(0, 1.5 * 12))
 
 model_bundle <- list(
   dat_surv = dat_surv,
@@ -117,13 +122,16 @@ gt_median_surv <- gtsummary::tbl_survfit(
 gt_surv_times <- gtsummary::tbl_survfit(
   surv_table,
   times = seq(3, 12, by = 3),
+  label_header = "Month {time}"
 )
+
+gt_surv_times
 
 
 model_bundle <- c(
   model_bundle,
-  gt_med_surv = gt_median_surv,
-  gt_surv_times = gt_surv_times
+  gt_med_surv = list(gt_median_surv),
+  gt_surv_times = list(gt_surv_times)
 )
 
 readr::write_rds(
