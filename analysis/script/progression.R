@@ -145,13 +145,14 @@ if (
 prog_flags <- first_lines |>
   mutate(
     prog_in_range = case_when(
+      first_prog_in_range > dob_reg2_start_int ~ F
       !is.na(first_prog_in_range) ~ T,
       first_eval_in_range <= dob_reg2_start_int ~ F,
       is.na(dob_reg2_start_int) ~ F,
       # cases left: first_eval_in_range NA or greater than 2L start.
       # started a medication within 6m:
       (dob_reg2_start_int - dob_reg_start_int) < 26 * 7 ~ T,
-      T ~ F # did not
+      T ~ F # did not progress
     )
   )
 

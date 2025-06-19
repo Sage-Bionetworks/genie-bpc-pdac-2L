@@ -25,7 +25,28 @@ line_small %>%
   arrange(record_id, line_of_therapy) %>%
   View(.)
 
-# Hack:  I'm going to save the cohort before and after duplicate lines (which requires a code edit - there's no easy flag here):
-readr::write_rds(
-  cohort,
-  here('analysis', 'explore', 'cohort_before
+# Hack:  I'm going to save the cohort before and after duplicate lines (which requires a code edit - there's no easy flag here).
+# Run without dupe removal, save, then run again with, save, etc.
+# readr::write_rds(
+#   cohort,
+#   here('analysis', 'explore', 'cohort_before_dupe_removal.rds')
+# )
+# readr::write_rds(
+#   cohort,
+#   here('analysis', 'explore', 'cohort_after_dupe_removal.rds')
+# )
+
+# Then analyze:
+cohort_before_dupe_removal <- readr::read_rds(
+  here('analysis', 'explore', 'cohort_before_dupe_removal.rds')
+)
+cohort_after_dupe_removal <- readr::read_rds(
+  here('analysis', 'explore', 'cohort_after_dupe_removal.rds')
+)
+
+setdiff(
+  cohort_before_dupe_removal$record_id,
+  cohort_after_dupe_removal$record_id
+) %>%
+  output_cbio_lines(.)
+# only two cases, both are definitely correct, look great to me.
