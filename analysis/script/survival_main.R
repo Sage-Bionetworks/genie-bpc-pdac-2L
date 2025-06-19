@@ -69,7 +69,7 @@ dat_surv <- remove_trunc_gte_event(
   event_var = 'tt_os_g_days'
 )
 
-# months are a really stupid unit to use, but here we go:
+# we're in cancer so we bullheadedly use months:
 dat_surv %<>%
   mutate(
     reg_cpt_mos = reg_cpt_days / 30.4,
@@ -96,12 +96,15 @@ gg_os <- plot_one_survfit(
     ")"
   ),
   plot_subtitle = "Adjusted for delayed entry (independent)",
-  x_breaks = seq(0, 500, by = 3),
+  x_breaks = seq(0, 500, by = 1),
   x_title = "Months",
-  x_exp = 0
+  x_exp = 0.03
 ) +
   add_confidence_interval() +
-  coord_cartesian(xlim = c(0, 1.5 * 12))
+  coord_cartesian(xlim = c(0, 1.5 * 12)) +
+  theme(
+    panel.grid.minor = element_blank()
+  )
 
 model_bundle <- list(
   dat_surv = dat_surv,

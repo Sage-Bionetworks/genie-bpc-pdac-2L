@@ -36,6 +36,8 @@ In the GENIE project, participants only enter the cohort once they have a high-t
 
 Throughout this report we correct our Kaplan-Meier (KM) estimates for left truncation by assuming independent truncation.  That is, the truncation time (time of first NGS) and event time (time from index therapy to death) are not related.  There are tests for this, but the statistical methods available if this assumption is violated are much more difficult to use, fit and assess. In general metastatic (or later stage) cohorts tend to have fewer problems than early stage cohorts, and pancreatic tends to be better than other cancers due to the shorter survival times (doi:10.1001/jamanetworkopen.2020.6976).
 
+Censoring is also assumed to be independent in this cohort.
+
 Failure to adjust for left truncation in GENIE (and other datasets with a similar bias) typically inflates survival times to be higher than the truth.
 
 ```{r}
@@ -45,6 +47,9 @@ main_model_bundle <- readr::read_rds(
 prog_compare_bundle <- readr::read_rds(
   here('data', 'survival', 'prog_compare_bundle.rds')
 )
+geno_compare_bundle <- readr::read_rds(
+  here('data', 'survival', 'geno_comp_bundle.rds')
+)
 ```
 
 ## Primary analysis
@@ -53,6 +58,7 @@ The primary analysis for this stage of the study is a one-arm KM estimate of ove
 
 ```{r}
 #| include: true
+#| fig-height: 4
 
 main_model_bundle$gg_os
 ```
@@ -72,6 +78,8 @@ main_model_bundle$gt_surv_times
 
 - The at-risk population can go up with risk set adjusted left-truncated survival data.  This may or may not appear in the graph for this cohort with the short survival times.
 - The number in the KM graph is slightly lower than the attrition table.  This is due to the loss of some subjects whose NGS time is greater than their survival time (and thus contribute no at-risk time).  This is an expected occurrence due to the lag between order an NGS test and receiving the results - people can die in this interval.
+- There is almost no censoring here, which weakens the power of the independent censoring assumption.
+- The graph is truncated at 18 months to show the region of high activity - actual tail goes on for years.
 
 
 ## Sensitivity
@@ -83,7 +91,34 @@ As a sensitivity analysis we consider what happens if we drop the last line in t
 prog_compare_bundle$gg_os
 ```
 
+**Notes:**
+
+- The cohort without verified progression has dramatically longer survival than those with verified progression.
+- While in general it's expected that a confirmation of worsening health (progression) would be associated with shorter survival, this shows that this cohort is probably not a suitable control arm for one where progression is verified in a single-arm trial.
 
 
+## Genomic comparsions
+
+We received a request to make two comparisons if time permitted:
+
+- Those with KRAS G12D mutations, compared to those with any other G12 mutation ("G12[*]").
+- Those with KRAS G12D mutations, compared to those who have no G12 mutations of any kind.  We will denote this as wild type (WT), even though there are other fairly common KRAS mutations with potential consequences.
+
+These are shown below, with little difference in survival based on genomics.  These cohorts are built in the same way as the main analysis, just skipping the KRAS G12D+ requirement.
+
+```{r}
+#| include: true
 
 
+geno_compare_bundle$gg_os_geno_1
+```
+
+```{r}
+#| include: true
+
+geno_compare_bundle$gg_os_geno_2
+```
+
+**Notes:**
+
+- There is little difference between the genomic groups for baseline overall survival.

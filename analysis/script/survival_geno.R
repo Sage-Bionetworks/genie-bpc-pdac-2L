@@ -5,22 +5,42 @@ library(purrr)
 library(here)
 purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 
-# Create a dataset which has the verified and non-verified progression
-#   cohorts stacked.  The people in the verified cohort will obviously
-#   be in both.
-cohort_prog_not_verified <- readr::read_rds(here(
+cohort_pv_no_kras <- readr::read_rds(here(
   'data',
-  'cohort_prog_not_verified.rds'
+  'cohort_prog_verified_no_kras_check.rds'
 ))
-cohort_prog_verified <- readr::read_rds(here(
-  'data',
-  'cohort_prog_verified.rds'
-))
-cohort <- cohort_prog_not_verified %>%
+kras_groups <- readr::read_rds(
+  here(
+    'data',
+    'genomic',
+    'kras_groups.rds'
+  )
+)
+cpt <- readr::read_csv(
+  here(
+    'data-raw',
+    'PANC',
+    'cancer_panel_test_level_dataset.csv'
+  )
+)
+
+cohort <- get_first_cpt(cohort_pv_no_kras, cpt, include_sample_id = T) %>%
+  select(record_id, sample_id = cpt_genie_sample_id) %>%
+  left_join(cohort_pv_no_kras, ., by = 'record_id') %>%
+  left_join(., kras_groups, by = 'sample_id')
+
+
+cohort <- cohort %>%
   mutate(
-    prog_group = case_when(
-      record_id %in% cohort_prog_verified$record_id ~ "Prog. verified",
-      record_id %in% cohort_prog_not_verified$record_id ~ "Prog. assumed"
+    g12d_vs_g12 = case_when(
+      alt_g12d ~ "G12D",
+      alt_g12other ~ "G12[*]",
+      T ~ NA_character_
+    ),
+    g12d_vs_wt = case_when(
+      alt_g12d ~ "G12D",
+      no_kras_g12 ~ "WT",
+      T ~ NA_character_
     )
   )
 
@@ -30,7 +50,8 @@ cpt <- readr::read_csv(
 
 dat_surv <- cohort |>
   select(
-    prog_group,
+    g12d_vs_g12,
+    g12d_vs_wt,
     record_id,
     ca_seq,
     stage_dx_iv,
@@ -91,13 +112,12 @@ dat_surv <- remove_trunc_gte_event(
   event_var = 'tt_os_g_days'
 )
 
-# if we had any sense we'd use days:
+# months are a silly unit to use, but here we go:
 dat_surv %<>%
   mutate(
     reg_cpt_mos = reg_cpt_days / 30.4,
     tt_os_g_mos = tt_os_g_days / 30.4
   )
-
 
 surv_obj_os <- with(
   dat_surv,
@@ -108,9 +128,22 @@ surv_obj_os <- with(
   )
 )
 
-gg_os <- plot_one_survfit(
+gg_os_geno_1 <- plot_one_survfit(
   dat = dat_surv,
-  surv_form = surv_obj_os ~ prog_group,
+  surv_form = surv_obj_os ~ g12d_vs_g12,
+  plot_title = "OS from initiation of index therapy",
+  plot_subtitle = "Adjusted for delayed entry (independent)",
+  x_breaks = seq(0, 500, by = 3),
+  x_title = "Months",
+  x_exp = 0,
+  pal = c('#ee7733', '#0077bb')
+) +
+  add_confidence_interval(type = 'ribbon') +
+  coord_cartesian(xlim = c(0, 3 * 12))
+
+gg_os_geno_2 <- plot_one_survfit(
+  dat = dat_surv,
+  surv_form = surv_obj_os ~ g12d_vs_wt,
   plot_title = "OS from initiation of index therapy",
   plot_subtitle = "Adjusted for delayed entry (independent)",
   x_breaks = seq(0, 500, by = 3),
@@ -123,23 +156,15 @@ gg_os <- plot_one_survfit(
 
 model_bundle <- list(
   dat_surv = dat_surv,
-  gg_os = gg_os
+  gg_os_geno_1 = gg_os_geno_1,
+  gg_os_geno_2 = gg_os_geno_2
 )
 
 readr::write_rds(
   model_bundle,
-  here('data', 'survival', 'prog_compare_bundle.rds')
+  here('data', 'survival', 'geno_comp_bundle.rds')
 )
 
 # Relevant comparator:
 # https://pmc.ncbi.nlm.nih.gov/articles/PMC6962478/
 # 7.3 mo (5.3, 9.3)
-
-# Create survival fit object
-surv_fit <- survfit(surv_obj_os ~ prog_group, data = dat_surv)
-
-surv_fit %>%
-  summary %>%
-  `$`(., 'table') %>%
-  as_tibble(., rownames = 'group') %>%
-  rename(lower = `0.95LCL`, upper = `0.95UCL`)
