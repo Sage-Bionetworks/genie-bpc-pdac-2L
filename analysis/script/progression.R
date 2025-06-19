@@ -84,6 +84,35 @@ first_lines <- second_lines |>
     by = 'record_id'
   )
 
+# now add in the index line - which could be either the second or third line.
+line_eval <- readr::read_rds(here('data', 'drug', 'line_evaluation.rds'))
+
+# missing a lot of the data we need here sadly - merge back in:
+line_eval %<>%
+  filter(!is.na(index_line)) %>%
+  select(record_id, index_line) %>%
+  left_join(
+    .,
+    select(lot, record_id, line_of_therapy, regimen_number),
+    by = c('record_id', index_line = 'line_of_therapy'),
+    relationship = 'one-to-one'
+  ) %>%
+  left_join(
+    .,
+    select(reg, record_id, regimen_number, dob_reg_start_int),
+    by = c('record_id', 'regimen_number')
+  )
+
+# merge it into the main dataframe we're working with:
+first_lines <- line_eval |>
+  select(record_id, dob_reg_index_start_int = dob_reg_start_int) |>
+  left_join(
+    first_lines,
+    y = _,
+    by = 'record_id',
+    relationship = 'one-to-one'
+  )
+
 
 first_eval <- filter_times_by_ref(
   dat = filter(status_sum, eval),
@@ -145,14 +174,14 @@ if (
 prog_flags <- first_lines |>
   mutate(
     prog_in_range = case_when(
-      first_prog_in_range > dob_reg2_start_int ~ F
+      first_prog_in_range > dob_reg_index_start_int ~ F,
       !is.na(first_prog_in_range) ~ T,
       first_eval_in_range <= dob_reg2_start_int ~ F,
       is.na(dob_reg2_start_int) ~ F,
       # cases left: first_eval_in_range NA or greater than 2L start.
-      # started a medication within 6m:
+      # started a medication within 6m (and had no evaluations before the switch):
       (dob_reg2_start_int - dob_reg_start_int) < 26 * 7 ~ T,
-      T ~ F # did not progress
+      T ~ F # did not progress, did not start new med in range.
     )
   )
 

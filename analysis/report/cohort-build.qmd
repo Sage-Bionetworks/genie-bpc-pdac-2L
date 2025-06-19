@@ -31,11 +31,11 @@ purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 
 ## Introduction
 
-This report addresses the feasibility of an Astellas study of second line therapies in pancreatic ductal adenocarcinoma.  We will leverage the existing curation in the pancreatic BPC (v1.2-consoritum) cohort to study the questions they've outlined.
+This report addresses the feasibility of an Astellas study of second line therapies in metastatic pancreatic ductal adenocarcinoma (PDAC).  We will leverage the existing curation in the pancreatic BPC (v1.2-consoritum) cohort to study the questions outlined.
 
 ## Attrition table
 
-We'll show the table first, and detailed explanations follow below.  Each step in the table is cumulative, meaning that the second row states the number who meet the conditions in the first and second rows.  The last row is only used for the sensitivity analysis.  In the primary analysis, we assume everyone has progressed because they had a second line therapy (meaning they moved on from the first line).
+We'll show the table first, and detailed explanations follow below.  Each step in the table is cumulative, meaning that the second row states the number who meet the conditions in the first and second rows.  We will show the difference in OS between the last row and second to last row in the results report.
 
 ```{r}
 flow_track <- readr::read_rds(
@@ -50,8 +50,7 @@ flow_track_ft <- flow_track %>%
   theme_booktabs() %>%
   align(j = "n", align = "right") %>%
   fontsize(size = 10) %>%
-  autofit() %>%
-  italic(i = nrow(flow_track), j = 1, italic = T) 
+  autofit() 
 ```
 
 ```{r}
@@ -61,16 +60,17 @@ flow_track_ft
 
 Details:
 
-- **PDAC tumor** - At least one sample had the oncotree code for Pancreatic Adenocarcinoma (PAAD) or Adenosquamous Carcinoma of the Pancreas (PAASC), leaving out anyone with only Acinar Cell Carcinoma of the Pancreas (PAAC) and Undifferentiated Carcinoma of the Pancreas (UCP).
-- **US sites only** Eliminated UHN from the cohort.
-- **Only one cancer** The only cancer these people had is the pancreatic cancer that qualifies them for the cohort.  Only about 30 people had multiple cancers with pancreatic first, so it's almost certainly not worth it to open that can of worms.
-- **Met dx. (anytime)** Limits to those who had a metastatic diagnosis at some point.  We'll check that their index therapy is in the metastatic state later.
+- **BPC PANC v1.2** The biopharma collaborative pancreatic cancer dataset, version 1.2-consortium.
+- **PDAC tumor** - At least one sample for each person had the oncotree code for Pancreatic Adenocarcinoma (PAAD) or Adenosquamous Carcinoma of the Pancreas (PAASC), leaving out anyone with only Acinar Cell Carcinoma of the Pancreas (PAAC) and Undifferentiated Carcinoma of the Pancreas (UCP) samples.
+- **US sites only** Eliminated UHN (Canada) from the cohort.
+- **Only one cancer** The only cancer these people had is the pancreatic cancer that qualifies them for the cohort.  Only about 30 people had multiple cancers with pancreatic first, so it's almost certainly not worth it to open the can of worms that comes with trying to figure out which therapy counts for which cancer.
+- **Met dx. (anytime)** Limits to those who had a metastatic diagnosis at some point.  We will check the timing of the metastatic diagnosis with the index therapy later.
 - **KRAS G12D+** Had the mutation of interest in at least one NGS test.
 - **1L gem/5FU-based** - The first line of therapy includes either gemcitabine or 5-FU (Fluorouracil).  Using the wording in inclusion criterion #3 from the protocol, **lines of therapy start with this exposure even if the exposure is before metastasis**.
-- **Metastatic at 2L/3L** - the person is metastatic at the index therapy, which is either one or two therapies after the gem/5fu exposure.
-- **No investigational agents** - the person had no investigational agents included in any therapies from the gem/5-FU to the index therapy.
-- **Documented prog after 1L** - see section below.
-  - Alternate to consider:  Everyone in the cohort did another therapy, you could argue that this could just be skipped if therapy is a sign of progression.
+- **Metastatic at 2L/3L** - the person is metastatic at the index therapy, which is either one or two therapies after the gem/5fu exposure (2L or 3L).
+- **No investigational** - the person had no investigational agents included in any therapies from the gem/5-FU to the index therapy.
+- **Documented prog after 1L** - complicated, see section below.
+
 
 
 
@@ -79,14 +79,21 @@ Details:
 
 Progression is defined as one of the following two events happening between 6 weeks (42 days) and 6 months (182 days) after the initiation of the gem/5-FU therapy:
 
-- A medical oncology note documented a worsening, or an imaging report documented a worsening.
-- There was a change in therapies, and there were no evaluations by imaging or medical oncology documented up to the date of the switch.
+- A medical oncology note documented a worsening, or an imaging report radiologist summary noted a worsening. 
+- There was a change in therapies, and there were no evaluations by imaging or medical oncology documented up to the date of the switch.  The idea here is that a therapy switch is a proxy for progression, and if there are no imaging or med onc notes it probably means we missed the relevant thoughts of the treatment team.
 
-Further, progression flags in imaging and oncology infer that a switch from **no cancer** to **cancer** is a progression, or similarly that an imaging report showing cancer in a new region (e.g. brain) using the same type of image (e.g. CT) is a progression.  I will refer to this as longitudinal inference, and it's an added layer on top of what the BPC data show which will be important for ORR.
-
-If we lose the longitudinal inference then the bottom number goes from about ~111 to ~97, with the advantage of having fewer decisions to defend for now.  This is virtually required for ORR since base BPC data affords almost no way to see a complete response without this step.  It's also an option to only do this with med onc notes, where this is more straightforward and defensible as we don't have regions or image types.
+There was previously a note here about longituinal inference on imaging and med onc.  We have removed this for the moment, which creates a lower reliance on untested assumptions at this stage.  
 
 ## Lines
+
+We begin counting regimens as lines of therapy when either of the following happens:
+
+1. Exposure to gemcitabine or 5-FU (even if they precede the metastatic diagnosis).
+2. Any therapy given in the metastatic setting.
+
+Additionally, we do not count consecutive regimens using the same drugs as a new line of therapy.  For example, if a patient's first three captured regimens are FOLFIRINOX, FOLFIRINOX, Gemcitabine + Nabpaclitaxel, then we would say their first line is FOLFIRINOX and the second line is Gemcitabine + Nabpaclitaxel.  That is, the second second administration of FOLFIRINOX is not a new line but the continuation of an old line.
+
+If desired, we can expand this concept to say that similar regimens 
 
 ```{r}
 lot <- readr::read_rds(here('data', 'drug', 'lot.rds'))
@@ -110,7 +117,7 @@ lot %>%
   rownames = FALSE)
 ```
 
-This table shows the therapies used in the index line:
+This table shows the therapies used in the index line (either 2L or 3L):
 
 ```{r}
 #| include: true
