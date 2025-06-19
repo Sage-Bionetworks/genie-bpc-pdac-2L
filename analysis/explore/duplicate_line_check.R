@@ -24,3 +24,8 @@ line_small %>%
   select(record_id, line_of_therapy, regimen_drugs, prev_reg_drugs) %>%
   arrange(record_id, line_of_therapy) %>%
   View(.)
+
+# Hack:  I'm going to save the cohort before and after duplicate lines (which requires a code edit - there's no easy flag here):
+readr::write_rds(
+  cohort,
+  here('analysis', 'explore', 'cohort_before

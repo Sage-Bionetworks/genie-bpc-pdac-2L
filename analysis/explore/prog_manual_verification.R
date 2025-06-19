@@ -28,33 +28,17 @@ set.seed(1309)
 prog_samp <- sample(pts_prog, 10, replace = F)
 no_prog_samp <- sample(pts_no_prog, 10, replace = F)
 
-# Output cBio URLs:
-stub <- "https://genie-private.cbioportal.org/patient?studyId=panc_genie_bpc&caseId="
-paste0(stub, prog_samp) %>%
-  writeLines(
-    here(
-      'analysis',
-      'explore',
-      'test_cases_who_progressed.txt'
-    )
-  )
+output_cbio_lines(
+  ids = prog_samp,
+  file = here('analysis', 'explore', 'test_cases_who_progressed.txt')
+)
 
-paste0(stub, no_prog_samp) %>%
-  writeLines(
-    here(
-      'analysis',
-      'explore',
-      'test_cases_who_did_not_progress.txt'
-    )
-  )
+output_cbio_lines(
+  ids = no_prog_samp,
+  file = here('analysis', 'explore', 'test_cases_who_did_not_progress.txt')
+)
 
-# Output all the cases that did not progress:
-sort(pts_no_prog) %>%
-  paste0(stub, .) %>%
-  writeLines(
-    here(
-      'analysis',
-      'explore',
-      'complete_cases_who_did_not_progress.txt'
-    )
-  )
+output_cbio_lines(
+  ids = pts_no_prog,
+  file = here('analysis', 'explore', 'complete_cases_who_did_not_progress.txt')
+)

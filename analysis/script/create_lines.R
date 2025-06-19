@@ -53,20 +53,20 @@ line_of_ther %<>% filter(line_eligible)
 # I'm not going to remove investigational agents or anything here - we will do that later on.
 
 # Duplicate regimen merging is crude because we don't need the end date: we literally just axe the second one from the list.
-line_of_ther %<>%
-  group_by(record_id) %>%
-  arrange(dx_reg_start_int) %>%
-  mutate(
-    .prev_reg_drugs = lag(regimen_drugs),
-    .dup_reg = case_when(
-      is.na(prev_reg_drugs) ~ F, # can't check, should be first row.
-      .prev_reg_drugs == regimen_drugs ~ T,
-      T ~ F
-    )
-  ) %>%
-  ungroup(.) %>%
-  filter(.dup_reg) %>%
-  select(-c(.prev_reg_drugs, .dup_reg))
+# line_of_ther %<>%
+#   group_by(record_id) %>%
+#   arrange(dx_reg_start_int) %>%
+#   mutate(
+#     .prev_reg_drugs = lag(regimen_drugs),
+#     .dup_reg = case_when(
+#       is.na(prev_reg_drugs) ~ F, # can't check, should be first row.
+#       .prev_reg_drugs == regimen_drugs ~ T,
+#       T ~ F
+#     )
+#   ) %>%
+#   ungroup(.) %>%
+#   filter(.dup_reg) %>%
+#   select(-c(.prev_reg_drugs, .dup_reg))
 
 line_of_ther %<>%
   group_by(record_id) %>%
