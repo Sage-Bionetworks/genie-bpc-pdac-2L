@@ -4,7 +4,7 @@ library(fs)
 library(purrr)
 library(here)
 purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
-cohort <- readr::read_rds(here('data', 'cohort_prog_not_verified.rds'))
+cohort <- readr::read_rds(here('data', 'cohort_prog_verified.rds'))
 
 cpt <- readr::read_csv(
   here('data-raw', 'PANC', 'cancer_panel_test_level_dataset.csv')
@@ -101,6 +101,29 @@ gg_os <- plot_one_survfit(
 model_bundle <- list(
   dat_surv = dat_surv,
   gg_os = gg_os
+)
+
+surv_table <- survfit(
+  data = dat_surv,
+  surv_obj_os ~ 1,
+)
+
+gt_median_surv <- gtsummary::tbl_survfit(
+  surv_table,
+  probs = 0.5,
+  label_header = "**Median Survival**"
+)
+
+gt_surv_times <- gtsummary::tbl_survfit(
+  surv_table,
+  times = seq(3, 12, by = 3),
+)
+
+
+model_bundle <- c(
+  model_bundle,
+  gt_med_surv = gt_median_surv,
+  gt_surv_times = gt_surv_times
 )
 
 readr::write_rds(
