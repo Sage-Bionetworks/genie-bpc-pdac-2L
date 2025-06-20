@@ -54,7 +54,7 @@ geno_compare_bundle <- readr::read_rds(
 
 ## Primary analysis
 
-The primary analysis for this stage of the study is a one-arm KM estimate of overall survival.  There are `r nrow(main_model_bundle$dat_surv)` cases which contribute risk time to this analysis.  The following table and figure show these numbers, along with a table of survival percentages at some select times:
+The primary analysis for this stage of the study is a one-arm KM estimate of overall survival (95% CI).  There are `r nrow(main_model_bundle$dat_surv)` cases which contribute risk time to this analysis.  The following table and figure show these numbers, along with a table of survival percentages at some select times:
 
 ```{r}
 #| include: true
@@ -104,21 +104,18 @@ We received a request to make two comparisons if time permitted:
 - Those with KRAS G12D mutations, compared to those with any other G12 mutation ("G12[*]").
 - Those with KRAS G12D mutations, compared to those who have no G12 mutations of any kind.  We will denote this as wild type (WT), even though there are other fairly common KRAS mutations with potential consequences.
 
-These are shown below, with little difference in survival based on genomics.  These cohorts are built in the same way as the main analysis, just skipping the KRAS G12D+ requirement.
+These are shown below, with little difference in survival based on genomics.  These cohorts are built in the same way as the main analysis, just skipping the KRAS G12D+ requirement.  The tables show 95% confidence intervals for median survival.
 
 ```{r}
 #| include: true
 
-
 geno_compare_bundle$gg_os_geno_1
+geno_compare_bundle$gt_median_surv_1
 ```
 
 ```{r}
 #| include: true
 
 geno_compare_bundle$gg_os_geno_2
+geno_compare_bundle$gt_median_surv_2
 ```
-
-**Notes:**
-
-- There is little difference between the genomic groups for baseline overall survival.

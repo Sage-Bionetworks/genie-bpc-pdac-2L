@@ -141,6 +141,17 @@ gg_os_geno_1 <- plot_one_survfit(
   add_confidence_interval(type = 'ribbon') +
   coord_cartesian(xlim = c(0, 3 * 12))
 
+surv_table_1 <- survfit(
+  data = dat_surv,
+  surv_obj_os ~ g12d_vs_g12,
+)
+
+gt_median_surv_1 <- gtsummary::tbl_survfit(
+  surv_table_1,
+  probs = 0.5,
+  label_header = "**Median Survival**"
+)
+
 gg_os_geno_2 <- plot_one_survfit(
   dat = dat_surv,
   surv_form = surv_obj_os ~ g12d_vs_wt,
@@ -154,10 +165,24 @@ gg_os_geno_2 <- plot_one_survfit(
   add_confidence_interval(type = 'ribbon') +
   coord_cartesian(xlim = c(0, 3 * 12))
 
+surv_table_2 <- survfit(
+  data = dat_surv,
+  surv_obj_os ~ g12d_vs_wt,
+)
+
+gt_median_surv_2 <- gtsummary::tbl_survfit(
+  surv_table_2,
+  probs = 0.5,
+  label_header = "**Median Survival**"
+)
+
+
 model_bundle <- list(
   dat_surv = dat_surv,
   gg_os_geno_1 = gg_os_geno_1,
-  gg_os_geno_2 = gg_os_geno_2
+  gg_os_geno_2 = gg_os_geno_2,
+  gt_median_surv_1 = gt_median_surv_1,
+  gt_median_surv_2 = gt_median_surv_2
 )
 
 readr::write_rds(
