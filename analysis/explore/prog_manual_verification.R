@@ -24,7 +24,7 @@ pts_prog <- pts_prog$record_id
 pts_no_prog <- pts_no_prog$record_id
 
 # Select 10 random ones from each:
-set.seed(1309)
+set.seed(1234)
 prog_samp <- sample(pts_prog, 10, replace = F)
 no_prog_samp <- sample(pts_no_prog, 10, replace = F)
 

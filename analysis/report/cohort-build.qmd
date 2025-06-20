@@ -162,7 +162,4 @@ cohort %>%
     - Adenosquamous Carcinoma of the Pancreas (PAASC)
     - Acinar Cell Carcinoma of the Pancreas (PAAC)
     - Undifferentiated Carcinoma of the Pancreas (UCP)
-- Two changes to consider in the progression window (numbers are rough because I made some small changes after checking these, and the calculations were done hackily):
-    - About +10 cases if we use a window of [1,182] days rather than [42, 182] days.
-    - About +35 cases if we use a window of [42, 364] days rather than [42, 182] days.
-    - The latter is surprising, but recall that progression from gem/5-FU may occur before metastasis in these people, so one year may not be that stunning.
+- The interval for progression was widened, could be changed as needed.

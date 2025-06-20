@@ -120,7 +120,7 @@ first_eval <- filter_times_by_ref(
   t_col = 'dob_eval_days',
   t_ref_col = 'dob_reg_start_int',
   lower_int = 1,
-  upper_int = 26 * 7
+  upper_int = 26 * 7 * 2
 ) %>%
   group_by(record_id) %>%
   summarize(first_eval_in_range = min(dob_eval_days), .groups = 'drop')
@@ -131,7 +131,7 @@ first_prog <- filter_times_by_ref(
   t_col = 'dob_eval_days',
   t_ref_col = 'dob_reg_start_int',
   lower_int = 6 * 7, # in a decision I don't totally endorse yet, 6 week minimum on progressions.
-  upper_int = 26 * 7
+  upper_int = 26 * 7 * 2
 ) %>%
   group_by(record_id) %>%
   summarize(first_prog_in_range = min(dob_eval_days), .groups = 'drop')
@@ -180,7 +180,7 @@ prog_flags <- first_lines |>
       is.na(dob_reg2_start_int) ~ F,
       # cases left: first_eval_in_range NA or greater than 2L start.
       # started a medication within 6m (and had no evaluations before the switch):
-      (dob_reg2_start_int - dob_reg_start_int) < 26 * 7 ~ T,
+      (dob_reg2_start_int - dob_reg_start_int) < 26 * 7 * 2 ~ T,
       T ~ F # did not progress, did not start new med in range.
     )
   )

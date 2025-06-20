@@ -5,12 +5,15 @@ library(purrr)
 library(here)
 purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 
+# Preprocessing scripts to help build the cohort:
 source(here('analysis', 'script', 'get_raw_data.R'))
 source(here('analysis', 'script', 'process_genomics.R'))
 source(here('analysis', 'script', 'create_lines.R'))
 source(here('analysis', 'script', 'evaluate_lines.R'))
 source(here('analysis', 'script', 'progression.R'))
+# Uses the outputs from all of those:
 source(here('analysis', 'script', 'build_cohort.R'))
+source(here('analysis', 'script', 'baseline_table.R'))
 
 # Render the feasibilty report:
 quarto::quarto_render(
