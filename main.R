@@ -14,6 +14,8 @@ source(here('analysis', 'script', 'progression.R'))
 # Uses the outputs from all of those:
 source(here('analysis', 'script', 'build_cohort.R'))
 source(here('analysis', 'script', 'baseline_table.R'))
+source(here('analysis', 'script', 'sites_of_met_at_index.R'))
+
 
 # Render the feasibilty report:
 quarto::quarto_render(

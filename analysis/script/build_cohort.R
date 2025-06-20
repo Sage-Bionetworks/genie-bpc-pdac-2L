@@ -105,3 +105,47 @@ readr::write_rds(
   cohort,
   here('data', 'cohort_prog_verified.rds')
 )
+
+#
+#
+#
+#
+# One additional check here, which is not a part of the main flow yet.
+# This should probably be it's own script but.... it's not.
+index_line_times <- select(cohort, record_id, index_line) %>%
+  left_join(
+    .,
+    select(lot, record_id, line_of_therapy, dx_reg_start_int),
+    by = c('record_id', index_line = 'line_of_therapy')
+  )
+first_g12d_pos <- cpt %>%
+  filter(cpt_genie_sample_id %in% sample_kras_g12d) %>%
+  group_by(record_id) %>%
+  mutate(
+    dx_cpt_ord_days = dx_cpt_rep_days - (dob_cpt_report_days - cpt_order_int)
+  ) %>%
+  summarize(
+    dx_first_kras_g12d_pos_rep = min(dx_cpt_rep_days, na.rm = T),
+    dx_first_kras_g12d_pos_ord = min(dx_cpt_ord_days, na.rm = T)
+  )
+
+index_line_times %<>%
+  left_join(
+    ., 
+    first_g12d_pos,
+    by = 'record_id'
+  ) %>%
+  mutate(
+    pos_rep_before_index = dx_reg_start_int > dx_first_kras_g12d_pos_rep,
+    pos_ord_before_index = dx_reg_start_int > dx_first_kras_g12d_pos_ord
+  )
+
+readr::write_rds(
+  index_line_times,
+  here('data', 'drug', 'cpt_index_timing.rds')
+)
+
+# count(index_line_times, pos_rep_before_index)
+# count(index_line_times, pos_ord_before_index)
+    
+  

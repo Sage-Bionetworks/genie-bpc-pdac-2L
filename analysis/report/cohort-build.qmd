@@ -46,6 +46,9 @@ dt_wrapper <- function(x, cap = NULL, font.size = '10pt', page_length = 10) {
     ) 
   )
 }
+
+theme_gtsummary_compact(font_size = 12)
+theme_gtsummary_language("en", big.mark = "") 
 ```
 
 
@@ -89,20 +92,55 @@ Details:
 - **1L gem/5FU-based** - The first line of therapy includes either gemcitabine or 5-FU (Fluorouracil).  Using the wording in inclusion criterion #3 from the protocol, **lines of therapy start with this exposure even if the exposure is before metastasis**.
 - **Metastatic at 2L/3L** - the person is metastatic at the index therapy, which is either one or two therapies after the gem/5fu exposure (2L or 3L).
 - **No investigational** - the person had no investigational agents included in any therapies from the gem/5-FU to the index therapy.
-- **Documented prog after 1L** - complicated, see section below.
+- **Documented prog after 1L** - complicated, see *Progression* section below.
+
+```{r}
+cpt_index_timing <- readr::read_rds(here('data', 'drug', 'cpt_index_timing.rds'))
+n_rep_before_index <- cpt_index_timing %>%
+  filter(pos_rep_before_index) %>%
+  nrow
+n_ord_before_index <- cpt_index_timing %>%
+  filter(pos_ord_before_index) %>%
+  nrow
+```
 
 
+*Note after meeting:* We had some questions about the timing of KRAS G12D+ results and index therapy start times.  Two numbers on this subject:
+
+- The number of people who have their KRAS G12D+ test result before they begin their index therapy (and meet all other criteria in this list) is `r n_rep_before_index`.  
+- The number who had a test ordered which would eventually come back positive is `r n_ord_before_index`.
+
+```{r}
+demo_dat <- readr::read_rds(
+  here('data', 'baseline_char.rds')
+)
+```
+
+
+## Demographics
+
+The following table shows the demographics for the group meeting all inclusion criteria:
+
+```{r}
+#| include: true
+gtsummary::tbl_summary(
+  select(demo_dat, -record_id),
+  digits = list(
+    `Year of birth` ~ 0
+  )
+)
+```
 
 
 
 ## Progression
 
-Progression is defined as one of the following two events happening between 6 weeks (42 days) and 6 months (182 days) after the initiation of the gem/5-FU therapy:
+Progression is defined as one of the following two events happening between 6 weeks (42 days) and 1 year (365 days) after the initiation of the gem/5-FU therapy:
 
 - A medical oncology note documented a worsening, or an imaging report radiologist summary noted a worsening. 
-- There was a change in therapies, and there were no evaluations by imaging or medical oncology documented up to the date of the switch.  The idea here is that a therapy switch is a proxy for progression, and if there are no imaging or med onc notes it probably means we missed the relevant thoughts of the treatment team.
+- There was a change in therapies, and there were no evaluations by imaging or medical oncology documented up to the date of the switch.  This can be removed if needed.
 
-There was previously a note here about longituinal inference on imaging and med onc.  We have removed this for the moment, which creates a lower reliance on untested assumptions at this stage.  
+
 
 ## Lines
 
@@ -117,7 +155,7 @@ If desired, we can expand this concept to say that similar regimens do not count
 
 ```{r}
 lot <- readr::read_rds(here('data', 'drug', 'lot.rds'))
-cohort <- readr::read_rds(here('data', 'cohort_prog_not_verified.rds'))
+cohort <- readr::read_rds(here('data', 'cohort_prog_verified.rds'))
 ```
 
 The following table shows all the first line (gem/5-FU) therapies:
@@ -155,6 +193,28 @@ cohort %>%
 
 **Note:** Lots of these are Gem and 5-FU, too, which may or may not be what the sponsor was expecting.
 
+
+```{r}
+met_sum <- readr::read_rds(
+  here('data', 'met_site_sum.rds')
+)
+```
+
+## Sites of metastasis
+
+The following table shows the number (%) of patients with a distant metastasis at select body regions when they begin the index therapy.  As discussed, more detailed information (ICD-O-3 codes) on metastatic sites can be mined from the imaging data if needed.
+
+```{r}
+#| include: true
+gtsummary::tbl_summary(
+  select(met_sum, -c(record_id))
+) %>%
+  modify_header(label = "**Met at index therapy**")
+
+```
+
+
+
 ## Miscellaneous notes
 
 - Using oncotree codes, we counted PAAD and PAASC as PDAC while PAAC and UCP are not.  Here are the four types present in the data:
@@ -162,4 +222,4 @@ cohort %>%
     - Adenosquamous Carcinoma of the Pancreas (PAASC)
     - Acinar Cell Carcinoma of the Pancreas (PAAC)
     - Undifferentiated Carcinoma of the Pancreas (UCP)
-- The interval for progression was widened, could be changed as needed.
+- The interval for progression could be modified if needed, ours is just a starting point for discussion.
