@@ -54,11 +54,11 @@ theme_gtsummary_language("en", big.mark = "")
 
 ## Introduction
 
-This report addresses the feasibility of an Astellas study of second line therapies in metastatic pancreatic ductal adenocarcinoma (PDAC).  We will leverage the existing curation in the pancreatic BPC (v1.2-consoritum) cohort to study the questions outlined.
+This report addresses the feasibility and resultant cohort of an Astellas study of second line therapies in metastatic pancreatic ductal adenocarcinoma (PDAC).  We will leverage the existing curation in the pancreatic BPC (v1.2-consoritum) cohort to study the questions outlined.
 
 ## Attrition table
 
-We'll show the table first, and detailed explanations follow below.  Each step in the table is cumulative, meaning that the second row states the number who meet the conditions in the first and second rows.  We will show the difference in OS between the last row and second to last row in the results report.
+We'll show the table first, and detailed explanations follow below.  Each step in the table is cumulative, meaning that the second row states the number who meet the conditions in the first and second rows.
 
 ```{r}
 flow_track <- readr::read_rds(
@@ -88,8 +88,8 @@ Details:
 - **US sites only** Eliminated UHN (Canada) from the cohort.
 - **Only one cancer** The only cancer these people had is the pancreatic cancer that qualifies them for the cohort.  Only about 30 people had multiple cancers with pancreatic first, so it's almost certainly not worth it to open the can of worms that comes with trying to figure out which therapy counts for which cancer.
 - **Met dx. (anytime)** Limits to those who had a metastatic diagnosis at some point.  We will check the timing of the metastatic diagnosis with the index therapy later.
-- **KRAS G12D+** Had the mutation of interest in at least one NGS test.
-- **1L gem/5FU-based** - The first line of therapy includes either gemcitabine or 5-FU (Fluorouracil).  Using the wording in inclusion criterion #3 from the protocol, **lines of therapy start with this exposure even if the exposure is before metastasis**.
+- **KRAS G12D+** Had the mutation of interest in at least one NGS test (see note below on timing).
+- **1L gem/5FU-based** - The first line of therapy includes either gemcitabine or 5-FU (Fluorouracil).  Using the wording in inclusion criterion #3 from the protocol, lines of therapy start with this exposure even if the exposure is before metastasis.
 - **Metastatic at 2L/3L** - the person is metastatic at the index therapy, which is either one or two therapies after the gem/5fu exposure (2L or 3L).
 - **No investigational** - the person had no investigational agents included in any therapies from the gem/5-FU to the index therapy.
 - **Documented prog after 1L** - complicated, see *Progression* section below.
@@ -105,7 +105,7 @@ n_ord_before_index <- cpt_index_timing %>%
 ```
 
 
-*Note after meeting:* We had some questions about the timing of KRAS G12D+ results and index therapy start times.  Two numbers on this subject:
+*Note on NGS timing:* We had some questions about the timing of KRAS G12D+ results and index therapy start times.  Two numbers on this subject:
 
 - The number of people who have their KRAS G12D+ test result before they begin their index therapy (and meet all other criteria in this list) is `r n_rep_before_index`.  
 - The number who had a test ordered which would eventually come back positive is `r n_ord_before_index`.
@@ -138,9 +138,7 @@ gtsummary::tbl_summary(
 Progression is defined as one of the following two events happening between 6 weeks (42 days) and 1 year (365 days) after the initiation of the gem/5-FU therapy:
 
 - A medical oncology note documented a worsening, or an imaging report radiologist summary noted a worsening. 
-- There was a change in therapies, and there were no evaluations by imaging or medical oncology documented up to the date of the switch.  This can be removed if needed.
-
-
+- There was a change in therapies, and there were no evaluations by imaging or medical oncology documented up to the date of the switch.  This second condition contributed a tiny number of cases (approximately 3) and could be removed for simplicity if desired.
 
 ## Lines
 

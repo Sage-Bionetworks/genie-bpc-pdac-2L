@@ -34,7 +34,7 @@ This report examines overall survival in the cohort detailed in the `cohort_buil
 
 In the GENIE project, participants only enter the cohort once they have a high-throughput genetic sequencing (aka next-generation sequencing) report.  Because the index time (in this case, from second or third line therapy) can occur before that report, this creates a potential source of immortal time bias.  Specifically, a person would hypothetically be at risk for the event (death) while not yet contributing to the at-risk population.  Statisticians may refer to the time of first NGS test as a "left truncation" variable.
 
-Throughout this report we correct our Kaplan-Meier (KM) estimates for left truncation by assuming independent truncation.  That is, the truncation time (time of first NGS) and event time (time from index therapy to death) are not related.  There are tests for this, but the statistical methods available if this assumption is violated are much more difficult to use, fit and assess. In general metastatic (or later stage) cohorts tend to have fewer problems than early stage cohorts, and pancreatic tends to be better than other cancers due to the shorter survival times (doi:10.1001/jamanetworkopen.2020.6976).
+Throughout this report we correct our Kaplan-Meier (KM) estimates for left truncation by assuming independent truncation and applying a risk set adjustment.  Independent truncation means the truncation time (time of first NGS) and event time (time from index therapy to death) are not related.  There are tests for this, but the statistical methods available if this assumption is violated are much more difficult to use, fit and assess, so the interventions available in for a violation are limited. In general metastatic (or later stage) cohorts tend to have fewer problems than early stage cohorts, and pancreatic tends to be better than other cancers due to the shorter survival times (doi:10.1001/jamanetworkopen.2020.6976).
 
 Censoring is also assumed to be independent in this cohort.
 
@@ -82,9 +82,9 @@ main_model_bundle$gt_surv_times
 - The graph is truncated at 18 months to show the region of high activity - actual tail goes on for years.
 
 
-## Sensitivity
+## Progression confirmation
 
-As a sensitivity analysis we consider what happens if we drop the last line in the cohort building table (verifying progression).  The cohort labelled "Prog. verified" is the analysis above, and the cohort labelled "Prog. assumed" meets all criteria except for verified progression.
+As an alternate analysis we consider what happens if we drop the last line in the cohort building table (verifying progression).  The cohort labelled "Prog. verified" is the analysis above, and the cohort labelled "Prog. assumed" meets all criteria except for verified progression (that is, those subjects lost in the last line of the attrition table).
 
 ```{r}
 #| include: true
