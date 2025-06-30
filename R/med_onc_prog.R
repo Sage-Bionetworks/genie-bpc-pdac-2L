@@ -26,8 +26,13 @@ med_onc_prog <- function(
 
   rtn <- rtn |>
     mutate(
-      evaluated = !(str_detect(md_ca, "does not mention cancer") |
-        str_detect(md_ca, "uncertain, indeterminate")),
+      evaluated = case_when(
+        str_detect(md_ca, " no evidence of cancer") ~ T,
+        str_detect(md_ca, "evidence of cancer") &
+          str_detect(md_ca_status, "Progressing|Improving|Stable|Mixed") ~
+          T,
+        T ~ F
+      ),
       cancer = case_when(
         str_detect(md_ca, "no evidence of cancer") ~ F,
         str_detect(md_ca, "there is evidence of cancer") ~ T,

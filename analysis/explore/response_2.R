@@ -1,0 +1,345 @@
+library(fs)
+library(purrr)
+library(here)
+purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
+
+library(ggsci)
+library(glue)
+
+med_onc <- readr::read_csv(
+  here('data-raw', 'PANC', 'med_onc_note_level_dataset.csv')
+)
+img <- readr::read_csv(
+  here('data-raw', 'PANC', 'imaging_level_dataset.csv')
+)
+
+img %>%
+  mutate(
+    evaluated = case_when(
+      str_detect(image_ca, " no evidence of cancer") ~ T,
+      str_detect(image_ca, "evidence of cancer") &
+        str_detect(image_overall, "Progressing|Improving|Stable|Mixed") ~
+        T,
+      T ~ F
+    )
+  ) %>%
+  count(image_ca, image_overall, evaluated)
+
+med_onc_sum <- med_onc_prog(
+  med_onc,
+  impute_longitudinal = F
+)
+
+# Not going to do this because we're just eliminating MRIs and PET / PET-CT.
+# img %<>% filter(image_scan_type %in% "CT")
+img_sum <- img_prog(
+  img,
+  impute_longitudinal = F
+)
+
+
+lot <- readr::read_rds(here('data', 'drug', 'lot.rds'))
+
+reg <- readr::read_csv(
+  here('data-raw', 'PANC', 'regimen_cancer_level_dataset.csv')
+)
+
+reg <- reg |>
+  mutate(
+    # creating the analogous version of dx_reg_start_int...
+    dob_reg_start_int = pmin(
+      drugs_startdt_int_1,
+      drugs_startdt_int_2,
+      drugs_startdt_int_3,
+      drugs_startdt_int_4,
+      drugs_startdt_int_5,
+      na.rm = T
+    )
+  )
+
+lot <- left_join(
+  lot,
+  select(reg, record_id, regimen_number, dob_reg_start_int),
+  by = c('record_id', 'regimen_number'),
+  # comment:  technically record_id and regimen number are not unique.
+  # however, everyone that we're working with has one cancer diagnosis,
+  #   so they should be here.  We exploit that for simpler code.
+  relationship = 'one-to-one'
+)
+
+cohort <- readr::read_rds(
+  here('data', 'cohort_prog_verified.rds')
+)
+
+index_lines <- cohort %>%
+  select(record_id, index_line)
+
+# Add the timing data in to this:
+index_lines <- lot %>%
+  select(record_id, line_of_therapy, regimen_drugs, dob_reg_start_int) %>%
+  left_join(
+    index_lines,
+    .,
+    by = c('record_id', index_line = 'line_of_therapy')
+  )
+
+# Add timing in for the line after index:
+index_lines <- lot %>%
+  # could always add in regimen_drugs_here.
+  select(
+    record_id,
+    line_of_therapy,
+    dob_line_after_index_start_int = dob_reg_start_int
+  ) %>%
+  left_join(
+    (index_lines %>%
+      mutate(line_after_index = index_line + 1)),
+    .,
+    by = c('record_id', line_after_index = 'line_of_therapy')
+  )
+
+skel <- expand_grid(
+  obs_min = c(0, 28),
+  obs_max = c(91, 182, 364, 364 * 5)
+)
+
+skel %<>%
+  mutate(
+    dat_index = list(index_lines),
+    dat_img = list(img_sum),
+    dat_mo = list(med_onc_sum)
+  )
+
+skel %<>%
+  mutate(
+    # index data with observation windows.
+    dat_index_obs_wind = purrr::pmap(
+      .l = list(
+        o_min = obs_min,
+        o_max = obs_max,
+        dat = dat_index
+      ),
+      # add columns for min/max time that account for next regimen, start time of this regimen, etc.
+      .f = \(o_min, o_max, dat) {
+        dat %>%
+          mutate(
+            max_obs_time = pmin(
+              dob_line_after_index_start_int,
+              dob_reg_start_int + o_max,
+              na.rm = T
+            ),
+            min_obs_time = dob_reg_start_int + o_min
+          )
+      }
+    )
+  )
+
+skel %<>%
+  mutate(
+    incl_img = purrr::map2(
+      .x = dat_index_obs_wind,
+      .y = dat_img,
+      # filter to only the images in the window.
+      .f = \(ind, img) {
+        left_join(
+          img,
+          select(
+            ind,
+            record_id,
+            min_obs_time,
+            max_obs_time
+          ),
+          by = 'record_id'
+        ) %>%
+          filter(
+            min_obs_time - 0.5 < image_scan_int,
+            # here we DON'T want the endpoint to count.
+            max_obs_time - 0.5 > image_scan_int
+          )
+      }
+    )
+  )
+
+
+skel %<>%
+  mutate(
+    incl_mo = purrr::map2(
+      .x = dat_index_obs_wind,
+      .y = dat_mo,
+      # filter to only the med onc observations in the window.
+      .f = \(ind, mo) {
+        left_join(
+          mo,
+          select(
+            ind,
+            record_id,
+            min_obs_time,
+            max_obs_time
+          ),
+          by = 'record_id'
+        ) %>%
+          filter(
+            min_obs_time - 0.5 < md_onc_visit_int,
+            # here we DON'T want the endpoint to count.
+            max_obs_time - 0.5 > md_onc_visit_int
+          )
+      }
+    )
+  )
+
+count_mo_img <- function(
+  ind,
+  incl_img,
+  incl_mo
+) {
+  img_sum <- incl_img %>%
+    group_by(record_id) %>%
+    summarize(
+      n_img = n(),
+      n_img_eval = sum(evaluated)
+    )
+
+  mo_sum <- incl_mo %>%
+    group_by(record_id) %>%
+    summarize(
+      n_mo = n(),
+      n_mo_eval = sum(evaluated)
+    )
+
+  # For now I'm just going to keep everything in the index lines data and return it with extra columns.
+  rtn <- left_join(
+    ind,
+    img_sum,
+    by = 'record_id'
+  ) %>%
+    left_join(
+      .,
+      mo_sum,
+      by = 'record_id'
+    )
+
+  rtn %<>%
+    replace_na(
+      list(
+        n_img = 0,
+        n_img_eval = 0,
+        n_mo = 0,
+        n_mo_eval = 0
+      )
+    )
+
+  rtn %<>%
+    mutate(
+      n_img_or_mo = n_img + n_mo,
+      n_img_or_mo_eval = n_img_eval + n_mo_eval
+    )
+
+  return(rtn)
+}
+
+skel %<>%
+  mutate(
+    img_mo_count = purrr::pmap(
+      .l = list(
+        ind = dat_index_obs_wind,
+        incl_img = incl_img,
+        incl_mo = incl_mo
+      ),
+      .f = count_mo_img
+    ),
+    n_unobs_img = purrr::map_dbl(
+      .x = img_mo_count,
+      .f = \(x) x %>% filter(n_img_eval %in% 0) %>% nrow(.)
+    ),
+    n_unobs_mo = purrr::map_dbl(
+      .x = img_mo_count,
+      .f = \(x) x %>% filter(n_mo_eval %in% 0) %>% nrow(.)
+    ),
+    n_unobs_img_or_mo = purrr::map_dbl(
+      .x = img_mo_count,
+      .f = \(x) x %>% filter(n_img_or_mo_eval %in% 0) %>% nrow(.)
+    )
+  )
+
+get_obs_ecdf_data <- function(
+  dat
+) {
+  select(
+    dat,
+    record_id,
+    `Med onc` = n_mo_eval,
+    `Image` = n_img_eval,
+    `Either` = n_img_or_mo_eval
+  ) %>%
+    pivot_longer(
+      cols = -c(record_id),
+      names_to = 'obs_type',
+      values_to = 'n_obs'
+    ) %>%
+    mutate(
+      obs_type = factor(obs_type, levels = c('Image', 'Med onc', 'Either'))
+    )
+}
+
+plot_ecdf_data <- function(
+  dat
+) {
+  ggplot(
+    dat,
+    aes(x = n_obs, color = obs_type)
+  ) +
+    stat_ecdf() +
+    labs(
+      x = "Observations per person",
+      y = 'eCDF'
+    ) +
+    theme_bw() +
+    scale_color_bmj(name = NULL) +
+    theme(
+      legend.position = "bottom"
+    )
+}
+
+skel %<>%
+  mutate(
+    ecdf_dat = purrr::map(
+      .x = img_mo_count,
+      .f = get_obs_ecdf_data
+    )
+  )
+
+# Take two extreme rows and plot them.
+ecdf_plot_sum <- skel %>%
+  filter(
+    obs_min %in% 0 & obs_max %in% 364 | obs_min %in% 28 & obs_max %in% 91
+  ) %>%
+  select(obs_min, obs_max, ecdf_dat) %>%
+  unnest(ecdf_dat)
+
+ecdf_plot_sum %<>%
+  mutate(
+    obs_window = glue("Window: [{obs_min}, {obs_max}] days")
+  )
+
+gg_mo_img <- plot_ecdf_data(ecdf_plot_sum) +
+  facet_wrap(vars(obs_window))
+
+ggsave(
+  plot = gg_mo_img,
+  filename = here('analysis', 'explore', 'n_obs_mo_img.png'),
+  height = 4,
+  width = 8
+)
+
+skel %>%
+  select(obs_min, obs_max, n_unobs_img, n_unobs_mo, n_unobs_img_or_mo) %>%
+  flextable(.) %>%
+  autofit(.)
+
+
+# Check one person for my sanity:
+skel %>%
+  filter(obs_min %in% 0, obs_max %in% 364) %>%
+  pull(incl_img) %>%
+  .[[1]] %>%
+  filter(record_id %in% "GENIE-DFCI-109719")

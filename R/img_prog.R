@@ -18,8 +18,13 @@ img_prog <- function(
   rtn <- rtn |>
     mutate(
       # as it stands, we're sort of imbedding the assumption that any scan is an evaluation for cancer.
-      evaluated = !(str_detect(image_ca, "does not mention cancer") |
-        str_detect(image_ca, "uncertain, indeterminate")),
+      evaluated = case_when(
+        str_detect(image_ca, " no evidence of cancer") ~ T,
+        str_detect(image_ca, "evidence of cancer") &
+          str_detect(image_overall, "Progressing|Improving|Stable|Mixed") ~
+          T,
+        T ~ F
+      ),
       cancer = case_when(
         str_detect(image_ca, "no evidence of cancer") ~ F,
         str_detect(image_ca, "there is evidence of cancer") ~ T,
