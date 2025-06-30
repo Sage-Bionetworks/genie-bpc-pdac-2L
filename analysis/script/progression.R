@@ -184,7 +184,7 @@ prog_flags <- first_lines |>
       # cases left: first_eval_in_range NA or greater than 2L start.
       # Update: removing this case.
       # Should delete some of the code above, too.
-      (dob_reg2_start_int - dob_reg_start_int) < UPPER_PROG ~ T,
+      (dob_reg2_start_int - dob_reg_start_int) < UPPER_PROG ~ F,
       T ~ F # did not progress, did not start new med in range.
     )
   )
