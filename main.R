@@ -23,7 +23,7 @@ quarto::quarto_render(
 )
 fs::file_move(
   path = 'analysis/report/cohort-build.html',
-  new_path = 'analysis/report/cohort-build.html'
+  new_path = 'output/cohort-build.html'
 )
 
 # Run the relevant survival scripts:
@@ -38,5 +38,5 @@ quarto::quarto_render(
 )
 fs::file_move(
   path = 'analysis/report/survival.html',
-  new_path = 'analysis/report/survival.html'
+  new_path = 'output/survival.html'
 )

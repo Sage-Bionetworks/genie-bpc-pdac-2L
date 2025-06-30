@@ -1,6 +1,9 @@
 # Note on longitudinal imputation for imaging and med onc:
 # I changed this to FALSE for both, because it requires fewer assumptions and less explanation, now that this is situated as a sensitivity analysis.
 
+LOWER_PROG <- 1
+UPPER_PROG <- Inf
+
 library(fs)
 library(purrr)
 library(here)
@@ -119,8 +122,8 @@ first_eval <- filter_times_by_ref(
   ref_dat = first_lines,
   t_col = 'dob_eval_days',
   t_ref_col = 'dob_reg_start_int',
-  lower_int = 1,
-  upper_int = 26 * 7 * 2
+  lower_int = LOWER_PROG,
+  upper_int = UPPER_PROG
 ) %>%
   group_by(record_id) %>%
   summarize(first_eval_in_range = min(dob_eval_days), .groups = 'drop')
@@ -130,8 +133,8 @@ first_prog <- filter_times_by_ref(
   ref_dat = first_lines,
   t_col = 'dob_eval_days',
   t_ref_col = 'dob_reg_start_int',
-  lower_int = 6 * 7, # in a decision I don't totally endorse yet, 6 week minimum on progressions.
-  upper_int = 26 * 7 * 2
+  lower_int = LOWER_PROG,
+  upper_int = UPPER_PROG
 ) %>%
   group_by(record_id) %>%
   summarize(first_prog_in_range = min(dob_eval_days), .groups = 'drop')
@@ -179,8 +182,9 @@ prog_flags <- first_lines |>
       first_eval_in_range <= dob_reg2_start_int ~ F,
       is.na(dob_reg2_start_int) ~ F,
       # cases left: first_eval_in_range NA or greater than 2L start.
-      # started a medication within 6m (and had no evaluations before the switch):
-      (dob_reg2_start_int - dob_reg_start_int) < 26 * 7 * 2 ~ T,
+      # Update: removing this case.
+      # Should delete some of the code above, too.
+      (dob_reg2_start_int - dob_reg_start_int) < UPPER_PROG ~ T,
       T ~ F # did not progress, did not start new med in range.
     )
   )
