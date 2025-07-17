@@ -214,7 +214,7 @@ gtsummary::tbl_summary(
 
 ## Important changes
 
-- Jul 2025: Added a table of characteristics at index therapy.
+- Jul 2025: Added tables: baseline characteristics and metastatic sites at index therapy.
 - Jul 2025: The first draft of our progression algorithm allowed for progression defined by a drug switch, only in participants that had no medical oncologist or imaging assessments after starting first line therapy.  This has been removed (**Impact: ~-3 cases**).
 - Jul 2025: Previously we only included progression events which occurred >=6 weeks and <=6 months after 1L therapy.  After learning this does not match the Astellas protocol we removed this (**Impact: ~+30 cases, OS longer**).
 - Jul 2025: Originally progression was determined by either medical oncologist or imaging note.  We changed to just imaging to align with the target trial progression definition and the definition of response, which both use imaging only (**Impact:~-18 cases**).
