@@ -336,10 +336,70 @@ skel %>%
   flextable(.) %>%
   autofit(.)
 
+#
+#
+# Question from meeting:  How far are med onc reports from imaging reports?
 
-# Check one person for my sanity:
-skel %>%
-  filter(obs_min %in% 0, obs_max %in% 364) %>%
+ex_incl_img <- skel %>%
+  filter(obs_min %in% 0 & obs_max %in% 1820) %>%
   pull(incl_img) %>%
   .[[1]] %>%
-  filter(record_id %in% "GENIE-DFCI-109719")
+  # for each group of images on one day just take one for this purpose.
+  group_by(record_id, image_scan_int) %>%
+  slice(1) %>%
+  ungroup(.)
+
+ex_incl_mo <- skel %>%
+  filter(obs_min %in% 0 & obs_max %in% 1820) %>%
+  pull(incl_mo) %>%
+  .[[1]] %>%
+  # for med onc we only take those that are useful:
+  filter(evaluated)
+# may want to filter down to only evaluated med onc here.
+
+all_pairs <- left_join(
+  select(ex_incl_img, record_id, image_scan_int),
+  select(ex_incl_mo, record_id, md_onc_visit_int),
+  by = 'record_id',
+  relationship = 'many-to-many'
+)
+
+smallest_dist <- all_pairs %>%
+  mutate(
+    diff = md_onc_visit_int - image_scan_int,
+    abs_diff = abs(diff)
+  ) %>%
+  group_by(record_id, image_scan_int) %>%
+  arrange(abs_diff) %>%
+  slice(1) %>%
+  ungroup(.)
+
+smallest_dist %>%
+  count(is.na(diff))
+
+ggplot(smallest_dist %>% filter(diff >= -28 & diff <= 28), aes(x = diff)) +
+  stat_ecdf() +
+  labs(
+    title = "ECDF of time differences between imaging scans and med onc visits",
+    x = "Days difference (med onc - imaging)",
+    y = "Cumulative proportion"
+  ) +
+  theme_bw() +
+  scale_x_continuous(limits = c(-28, 28), breaks = seq(-28, 28, by = 7)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  geom_vline(xintercept = -7, linetype = "dashed", color = "blue") +
+  geom_vline(xintercept = 7, linetype = "dashed", color = "blue")
+
+
+all_pairs %>%
+  mutate(
+    diff = md_onc_visit_int - image_scan_int,
+    abs_diff = abs(diff),
+    within_a_week = diff >= 0 & diff <= 7
+  ) %>%
+  group_by(record_id, image_scan_int) %>%
+  summarize(
+    any_within_a_week = any(within_a_week, na.rm = T),
+    .groups = 'drop'
+  ) %>%
+  count(any_within_a_week)

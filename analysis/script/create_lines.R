@@ -16,6 +16,20 @@ reg <- readr::read_csv(
 )
 met_times <- get_dmet_time(ca_ind, annotate_type = F)
 
+# Need the regimen start time for these.
+reg <- reg |>
+  mutate(
+    # creating the analogous version of dx_reg_start_int...
+    dob_reg_start_int = pmin(
+      drugs_startdt_int_1,
+      drugs_startdt_int_2,
+      drugs_startdt_int_3,
+      drugs_startdt_int_4,
+      drugs_startdt_int_5,
+      na.rm = T
+    )
+  )
+
 line_of_ther <- reg %>%
   filter(ca_seq %in% 0) %>% # current restriction
   mutate(
@@ -84,7 +98,8 @@ line_of_ther %<>%
     fluoro_based,
     post_met_reg,
     dx_dmet_days,
-    dx_reg_start_int
+    dx_reg_start_int,
+    dob_reg_start_int
   )
 
 readr::write_rds(
