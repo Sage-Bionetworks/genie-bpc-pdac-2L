@@ -3,7 +3,7 @@
 status_processor <- function(
   dat,
   col_name,
-  output_name = "raw_response"
+  output_name = "status_change"
 ) {
   resp_lev <- c(
     'worsening',

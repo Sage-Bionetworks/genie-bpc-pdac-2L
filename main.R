@@ -40,3 +40,12 @@ fs::file_move(
   path = 'analysis/report/survival.html',
   new_path = 'output/survival.html'
 )
+
+source(here('analysis', 'script', 'response.R'))
+quarto::quarto_render(
+  input = here('analysis/report/response.qmd')
+)
+fs::file_move(
+  path = 'analysis/report/response.html',
+  new_path = 'output/response.html'
+)

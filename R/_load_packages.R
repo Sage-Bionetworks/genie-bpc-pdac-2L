@@ -1,5 +1,6 @@
 library(synapser)
 library(tidyverse)
+library(janitor)
 library(magrittr)
 library(rlang)
 library(cli)

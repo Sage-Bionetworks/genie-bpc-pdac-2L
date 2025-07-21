@@ -12,19 +12,18 @@ img <- readr::read_csv(
   here('data-raw', 'PANC', 'imaging_level_dataset.csv')
 )
 
-img_sum <- img_prog(
+img_sum <- img_process(
   img,
-  impute_longitudinal = F
+  return_minimal = T
 )
 
 # status_sum is a leftover from when med onc was in, now it's
 #   just a renaming of the imaging data.
 status_sum <- img_sum %>%
-  rename(dob_event_days = image_scan_int) %>%
   mutate(
     eval = evaluated,
-    prog = progression,
-    resp = response
+    prog = status_change %in% "worsening",
+    resp = status_change %in% "improving" # don't really need this now but that's OK.
   ) %>%
   replace_na(replace = list(eval = F, prog = F, resp = F)) %>%
   select(
@@ -94,7 +93,6 @@ if (
 ) {
   cli_abort("Something wrong with first_prog_in_range and line starts")
 }
-# Ok, moving on if those don't fire.
 
 # Our algorithm, is that a progression is triggered by any imaging progression after starting 1L (but before the index line).
 prog_flags <- first_lines |>

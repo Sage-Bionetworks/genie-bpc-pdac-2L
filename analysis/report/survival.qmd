@@ -84,7 +84,7 @@ main_model_bundle$gt_surv_times
 
 ## Progression confirmation
 
-As an alternate analysis we consider what happens if we drop the last line in the cohort building table (verifying progression).  The cohort labelled "Prog. verified" is the analysis above, and the cohort labelled "Prog. assumed" meets all criteria except for verified progression (that is, those subjects lost in the last line of the attrition table).
+As an alternate analysis we consider what happens if we drop the last line in the cohort building table (verifying progression).  The cohort labelled "Prog. verified" is the analysis above, and the cohort labelled "Prog. assumed" meets all criteria except for verified progression.
 
 ```{r}
 #| include: true

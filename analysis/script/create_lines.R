@@ -102,6 +102,24 @@ line_of_ther %<>%
     dob_reg_start_int
   )
 
+
+# I'll add few more lines here to show info about the next line.
+line_of_ther <- line_of_ther %>%
+  # We'll be joining this "next line" info with the previous line:
+  mutate(line_of_therapy = line_of_therapy - 1) %>%
+  select(
+    record_id,
+    line_of_therapy,
+    next_line_regimen_number = regimen_number,
+    dob_next_line_int = dob_reg_start_int,
+    next_line_drugs = regimen_drugs
+  ) %>%
+  left_join(
+    line_of_ther,
+    .,
+    by = c('record_id', 'line_of_therapy')
+  )
+
 readr::write_rds(
   line_of_ther,
   here('data', 'drug', 'lot.rds')

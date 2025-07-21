@@ -1,0 +1,230 @@
+---
+title: "Astellas metastatic PDAC"
+subtitle: "Real world response report"
+author: "Alex Paynter"
+date: "`r format(Sys.Date(), '%d %b %Y')`"
+editor_options:
+  quarto:
+    chunk_output_type: console
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-depth: 4
+    theme: sandstone 
+execute:
+  echo: false
+  include: false
+  warning: false
+  message: false
+  fig.width: 7
+  fig.height: 5
+---
+
+
+```{r}
+library(fs)
+library(purrr)
+library(here)
+purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
+```
+
+## Introduction
+
+This report details the real-world response data available in GENIE BPC.  GENIE is a real-world study, so the statistics in this report should not be expected to follow RECIST.  Specifically, in radiology reports where cancer is detected we have the following options describing the change in status (the **[bold]** annotations represent a shorthand for this study):
+
+> Radiologist Assessment of Change in Cancer Status [image_overall]
+>
+> • Improving/Responding **[PR]**
+> 
+> • Stable/No change **[SD]**
+>
+> • Mixed **[MR]**
+>
+> • Progressing/Worsening/Enlarging **[PD]**
+> 
+> • Not stated/Indeterminate **[NE]**
+
+RECIST demands that the sum of tumor diameters decrease by at least 30% and 5mm in order to note a response.  Practices in the real world vary, but generally we expect that radiologist impressions will note improvements smaller than this as "Improving/Responding".  We have left the outcome titles as is (that is, PR instead of rwPR and ORR instead of rwRR) to avoid clutter - everything here is real world. 
+
+Followup for response starts the day after initiation of the index therapy.  Followup is terminated at death or end of followup (naturally) or a switch in therapy to the next line.  By request, we truncate follow-up at first progression, presumably to match the existing trial arm criteria (though this does seem to differ from RECIST).
+
+Responders are those with at least one radiology impression noting Improving/Responding (PR).  Non-responders are those with at least one radiographic asssessment but no indication of response.  Best overall response shows the best response in the followup window, using the order in the levels above (that is, PD is only noted if MR is NOT noted).
+
+Confirmed response requires the following sequence of events:
+
+- *(optional)* 0+ SD or NE scans.
+- 1 PR scan.
+- *(optional)* 0+ NE scans.
+- 1 SD or PR scan.
+
+The last line follows because we expect real-world impressions to reference the *previous* scan, so SD after PR most likely represents an improvement from baseline.  This is discussed on page 13 of the supplement in the "rwSD" definition in https://doi.org/10.1200/CCI.24.00091.
+
+The denominator for response rate will be those with at least one radiographic scan after index therapy, even for confirmed response calculations.  The justification is again matching the trial arm protocol, but it's easy to add the people no scans into the denominator if needed.
+
+```{r}
+cohort <- readr::read_rds(
+  here('data', 'cohort_prog_verified.rds')
+)
+resp <- readr::read_rds(
+  here('data', 'response', 'responses.rds')
+)
+```
+
+## Results
+
+There were `r nrow(cohort)` people in our cohort which met eligibility criteria.  Of those, `r nrow(resp)` had at least one radiographic scan after initiation of index therapy, forming the denominator for ORR analyses below.  
+
+### Placeholder:  Stats on time to scans
+
+```{r}
+resp_ci <- binom::binom.confint(
+  c(sum(resp$resp_cat), sum(resp$resp_cat_conf)),
+  rep(nrow(resp), 2),
+  methods = 'exact'
+) %>%
+  mutate(
+    type = c('Any', 'Confirmed')
+  )
+
+resp_ci_ft <- resp_ci %>%
+  mutate(
+    `Non-responders` = n-x,
+    `Rate (95% CI)` = glue('{formatC(mean*100, digits = 1, format = "f")}% ({formatC(lower*100, digits = 1, format = "f")}, {formatC(upper*100, digits = 1, format = "f")})')
+    
+  ) %>%
+  rename(Responders = x) %>%
+  select(
+    ` ` = type, Responders, `Non-responders`, `Rate (95% CI)`
+  ) %>%
+  as_tibble(.) %>%
+  flextable(.) %>%
+  autofit(.)
+    
+```
+
+
+### ORR rate
+
+The following table shows the number of responders and non-responders, along with the rate and a 95% exact confidence interval.  This is repeated for any responder and only including those with a confirmed response (using the above definition).
+
+```{r}
+#| include: true
+resp_ci_ft
+```
+
+
+```{r}
+bor_ft <-  resp %>%
+  mutate(bor = factor(bor,
+                      levels = c("PR", "SD", "MR", "PD", "NE"))) %>%
+  tabyl(bor) %>%
+  mutate(`n (%)` = glue("{n} ({formatC(percent*100, format = 'f', digits = 1)}%)")) %>%
+  select(bor, `n (%)`) %>%
+  rename(`Best overall response` = bor) %>%
+  flextable(.) %>%
+  align(j = 2, align = 'right', part = "all") %>%
+  autofit(.)
+```
+
+### Best overall response
+
+The following table breaks the best overall response down into finer categories.  The priority order is the order of the table, so anyone with a "PR" response in the followup window would not be classed into a lower category.
+
+```{r}
+#| include: true
+
+bor_ft
+```
+
+
+### Placeholder: Discussion on RECIST alignment for those 0-30%
+
+
+
+
+## Appendix
+
+```{r}
+resp_code_binning_dt <- resp %>%
+  count(
+    resp_codes_trunc,
+    resp_cat,
+    resp_cat_conf,
+    bor,
+    sort = T,
+    name = "n_cases"
+  ) %>%
+  mutate(
+    resp_codes_trunc = unroll_letter_codes(resp_codes_trunc)
+  ) %>%
+  select(
+    n_cases,
+    Scans = resp_codes_trunc,
+    Responder = resp_cat,
+    `Conf. Resp` = resp_cat_conf,
+    BOR = bor
+  )
+
+resp_code_binning_dt %<>%
+  dt_wrapper(.)
+    
+```
+
+
+### Response categorization
+
+The following table shows every unique sequence of scans experienced by patients, and the category of BOR, ORR and confirmed ORR (ORR-C) that resulted.  The goal of this table is facilitating a detail-oriented discussion on some of the edge cases which come up, limited to those which actually occurred.
+
+```{r}
+#| include: true
+
+resp_code_binning_dt
+
+```
+
+
+```{r}
+resp_code_trunc_dt <- resp %>%
+  count(
+    resp_codes, 
+    resp_codes_trunc,
+    sort = T,
+    name = "n_cases"
+  ) %>%
+  mutate(
+    resp_codes = unroll_letter_codes(resp_codes),
+    resp_codes_trunc = unroll_letter_codes(resp_codes_trunc),
+    diff = resp_codes != resp_codes_trunc
+  ) %>%
+  select(
+    n_cases,
+    Raw = resp_codes,
+    Truncated = resp_codes_trunc,
+    diff
+  ) %>%
+  arrange(desc(diff), desc(n_cases))
+
+resp_code_trunc_dt %<>%
+  dt_wrapper(.)
+```
+
+### Truncation of followup
+
+As stated in the introduction, followup was truncated at the first sign of progression.  The following table shows the Truncated scan sequence and the Raw scan sequence, to show the impact of this.  The overall impact is one directional:  The number of responders will decrease when truncating followup.
+
+By default the table shows the cases where the truncation makes a difference in the included scans (diff = true) at the top, though this is not always consequential (actually, usually not).
+
+```{r}
+#| include: true
+resp_code_trunc_dt
+```
+
+
+
+
+## Questions
+
+- Mixed response - should it be considered equivalent to SD?  Affects both confirmed response definition and BOR definition.
+- Should those people with only NE scans after index therapy be included in the denominator for ORR?  Currently they are, but it's only 3 people.
+- In the case where a person switches therapy, we count any scans done on that day.  For example, if someone started their index line, and switched therapy on day 100, we still consider a scan on day 100 to be indicative of response/not to the index line. This does actually affect the inclusion of 4 scans, which may or may not alter the results.
