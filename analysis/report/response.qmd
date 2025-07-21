@@ -45,22 +45,25 @@ This report details the real-world response data available in GENIE BPC.  GENIE 
 > 
 > • Not stated/Indeterminate **[NE]**
 
+
+Everything response determination in this report is based on this information.
+
 RECIST demands that the sum of tumor diameters decrease by at least 30% and 5mm in order to note a response.  Practices in the real world vary, but generally we expect that radiologist impressions will note improvements smaller than this as "Improving/Responding".  We have left the outcome titles as is (that is, PR instead of rwPR and ORR instead of rwRR) to avoid clutter - everything here is real world. 
 
-Followup for response starts the day after initiation of the index therapy.  Followup is terminated at death or end of followup (naturally) or a switch in therapy to the next line.  By request, we truncate follow-up at first progression, presumably to match the existing trial arm criteria (though this does seem to differ from RECIST).
+Followup for response starts the day after initiation of the index therapy.  Followup is terminated at death or end of followup (naturally) or a switch in therapy to the next line.  By request, we truncate follow-up at first progression, in order to match the existing trial arm criteria.  This does differ from the recommendations in the RECIST paper.
 
-Responders are those with at least one radiology impression noting Improving/Responding (PR).  Non-responders are those with at least one radiographic asssessment but no indication of response.  Best overall response shows the best response in the followup window, using the order in the levels above (that is, PD is only noted if MR is NOT noted).
+**Responders** are those with at least one radiology impression noting Improving/Responding (PR).  **Non-responders** are those with at least one radiographic asssessment but no indication of response.  **Best overall response (BOR)** shows the best response in the followup window, using the order in the levels above (that is, PD is only noted if MR is NOT noted).
 
 Confirmed response requires the following sequence of events:
 
 - *(optional)* 0+ SD or NE scans.
-- 1 PR scan.
+- **1 PR scan.**
 - *(optional)* 0+ NE scans.
-- 1 SD or PR scan.
+- **1 SD or PR scan.**
 
-The last line follows because we expect real-world impressions to reference the *previous* scan, so SD after PR most likely represents an improvement from baseline.  This is discussed on page 13 of the supplement in the "rwSD" definition in https://doi.org/10.1200/CCI.24.00091.
+The last line follows because we expect real-world impressions to reference the *previous* scan, so SD after PR most likely represents an improvement from baseline.  This is discussed on page 13 of the supplement in the "rwSD" definition in <https://doi.org/10.1200/CCI.24.00091>.
 
-The denominator for response rate will be those with at least one radiographic scan after index therapy, even for confirmed response calculations.  The justification is again matching the trial arm protocol, but it's easy to add the people no scans into the denominator if needed.
+The denominator for response rate will be those with at least one radiographic scan after index therapy, even for confirmed response calculations.  The justification is again matching the trial arm protocol, but it's easy to add the people no scans into the denominator by hand if needed.
 
 ```{r}
 cohort <- readr::read_rds(
@@ -174,7 +177,7 @@ resp_code_binning_dt %<>%
 
 ### Response categorization
 
-The following table shows every unique sequence of scans experienced by patients, and the category of BOR, ORR and confirmed ORR (ORR-C) that resulted.  The goal of this table is facilitating a detail-oriented discussion on some of the edge cases which come up, limited to those which actually occurred.
+The following table shows every unique sequence of scans experienced by patients.  For each unique sequence we show responder (true/false), confirmed responder (true/false) and BOR.  The goal of this table is facilitating a detail-oriented discussion on some of the edge cases which come up, limited to those which actually occurred.
 
 ```{r}
 #| include: true
@@ -225,6 +228,6 @@ resp_code_trunc_dt
 
 ## Questions
 
-- Mixed response - should it be considered equivalent to SD?  Affects both confirmed response definition and BOR definition.
-- Should those people with only NE scans after index therapy be included in the denominator for ORR?  Currently they are, but it's only 3 people.
-- In the case where a person switches therapy, we count any scans done on that day.  For example, if someone started their index line, and switched therapy on day 100, we still consider a scan on day 100 to be indicative of response/not to the index line. This does actually affect the inclusion of 4 scans, which may or may not alter the results.
+- Mixed response - should it be considered equivalent to SD?  Affects both confirmed response definition and BOR definition.  Currently mixed response effectively acts like a progression, not counting as either a confirmation of response or as "padding" while waiting for something more definitive.
+- Should those people with only non-evaluable scans after index therapy be included in the denominator for ORR?  Currently they are.  It's only 3 people, but I think this comes down to the trial (which may not have NE scans).
+- In the case where a person switches therapy, we count any scans done on that day.  For example, if someone started a therapy at day 0, and switched therapy on day 100, we still consider a scan on day 100 to be indicative of response/not to the therapy started on day 0.  In fact, it seems most plausible to me that the switch was prompted by a lack of response recorded on that day.  This does actually affect the inclusion of 4 scans, which may or may not alter the results.

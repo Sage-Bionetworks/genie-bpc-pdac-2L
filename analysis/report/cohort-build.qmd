@@ -38,11 +38,11 @@ theme_gtsummary_language("en", big.mark = "")
 
 ## Introduction
 
-This report addresses the feasibility and resultant cohort of an Astellas study of second line therapies in metastatic pancreatic ductal adenocarcinoma (PDAC).  We will leverage the existing curation in the pancreatic BPC (v1.2-consoritum) cohort to study the questions outlined.
+This report addresses the feasibility of forming a cohort.  Specifically, the goal is finding a suitable control arm foran  Astellas study of second line therapies in metastatic pancreatic ductal adenocarcinoma (PDAC).  We will leverage the existing curation in the pancreatic BPC (v1.2-consoritum) cohort, with plans to curate images further if the initial submission goes well.
 
 ## Attrition table
 
-We'll show the table first, and detailed explanations follow below.  Each step in the table is cumulative, meaning that the second row states the number who meet the conditions in the first and second rows.
+The following table applies trial inclusion criteria to GENIE participants, showing how many are eliminated at each step.  We'll show the table first, and detailed explanations follow below.  Each step in the table is cumulative, meaning that the third row states the number who meet the conditions in the first, second and third rows, and so on.
 
 ```{r}
 flow_track <- readr::read_rds(
@@ -74,7 +74,7 @@ Details:
 - **Met dx. (anytime)** Limits to those who had a metastatic diagnosis at some point.  We will check the timing of the metastatic diagnosis with the index therapy later.
 - **KRAS G12D+** Had the mutation of interest in at least one NGS test (see note below on timing).
 - **1L gem/5FU-based** - The first line of therapy includes either gemcitabine or 5-FU (Fluorouracil).  Using the wording in inclusion criterion #3 from the protocol, lines of therapy start with this exposure even if the exposure is before metastasis.
-- **Metastatic at 2L/3L** - the person is metastatic at the index therapy, which is either one or two therapies after the gem/5fu exposure (2L or 3L).
+- **Met @ index line** - the person is metastatic at the index therapy, which is either one or two therapies after the gem/5fu exposure.  That is, the index line is 2L or 3L.
 - **No investigational** - the person had no investigational agents included in any therapies from the gem/5-FU to the index therapy.
 - **Documented prog after 1L** - complicated, see *Progression* section below.
 
@@ -119,10 +119,7 @@ gtsummary::tbl_summary(
 
 ## Progression
 
-Progression is defined as one of the following two events happening between 6 weeks (42 days) and 1 year (365 days) after the initiation of the gem/5-FU therapy:
-
-- A medical oncology note documented a worsening, or an imaging report radiologist summary noted a worsening. 
-- There was a change in therapies, and there were no evaluations by imaging or medical oncology documented up to the date of the switch.  This second condition contributed a tiny number of cases (approximately 3) and could be removed for simplicity if desired.
+Progression is defined as having at least one radiologist summary indicating a worsening.  See change notes below on this.
 
 ## Lines
 
@@ -133,7 +130,7 @@ We begin counting regimens as lines of therapy when either of the following happ
 
 Additionally, we do not count consecutive regimens using the same drugs as a new line of therapy.  For example, if a patient's first three captured regimens are FOLFIRINOX, FOLFIRINOX, Gemcitabine + Nabpaclitaxel, then we would say their first line is FOLFIRINOX and the second line is Gemcitabine + Nabpaclitaxel.  That is, the second second administration of FOLFIRINOX is not a new line but the continuation of an old line.
 
-If desired, we can expand this concept to say that similar regimens do not count as new lines.  For example, if someone goes from FOLFIRINOX to FOLFOX you could argue this dropping one for toxicity rather than a new line. We have not done this today because it requires detailed decisions.
+If desired, we can always expand this concept to say that similar regimens do not count as new lines.  For example, if someone goes from FOLFIRINOX to FOLFOX you could argue this dropping one for toxicity rather than a new line.
 
 ```{r}
 lot <- readr::read_rds(here('data', 'drug', 'lot.rds'))
@@ -211,4 +208,3 @@ gtsummary::tbl_summary(
     - Adenosquamous Carcinoma of the Pancreas (PAASC)
     - Acinar Cell Carcinoma of the Pancreas (PAAC)
     - Undifferentiated Carcinoma of the Pancreas (UCP)
-- The interval for progression could be modified if needed, ours is just a starting point for discussion.

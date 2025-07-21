@@ -79,7 +79,7 @@ flow_track %<>% flow_record_helper(cohort, "1L gem/5FU-based", .)
 
 
 cohort %<>% filter(line2or3_as_met)
-flow_track %<>% flow_record_helper(cohort, "Metastatic at 2L/3L", .)
+flow_track %<>% flow_record_helper(cohort, "Met @ index line", .)
 
 
 cohort %<>% filter(no_invest_to_index)
@@ -101,6 +101,23 @@ readr::write_rds(
   flow_track,
   here('data', 'flow_track.rds')
 )
+
+# Going to put the time/drug of index therapy in here.
+cohort <- lot %>%
+  select(
+    record_id,
+    index_line = line_of_therapy,
+    regimen_drugs,
+    dob_reg_start_int
+  ) %>%
+  left_join(
+    cohort,
+    .,
+    by = c('record_id', 'index_line'),
+    relationship = 'one-to-one'
+  )
+
+
 readr::write_rds(
   cohort,
   here('data', 'cohort_prog_verified.rds')
@@ -131,7 +148,7 @@ first_g12d_pos <- cpt %>%
 
 index_line_times %<>%
   left_join(
-    ., 
+    .,
     first_g12d_pos,
     by = 'record_id'
   ) %>%
@@ -147,5 +164,3 @@ readr::write_rds(
 
 # count(index_line_times, pos_rep_before_index)
 # count(index_line_times, pos_ord_before_index)
-    
-  

@@ -1,0 +1,25 @@
+---
+title: "Astellas metastatic PDAC"
+subtitle: "Data checking"
+author: "Alex Paynter"
+date: "`r format(Sys.Date(), '%d %b %Y')`"
+editor_options:
+  quarto:
+  chunk_output_type: console
+format:
+  html:
+  embed-resources: true
+toc: true
+toc-depth: 4
+theme: sandstone 
+execute:
+  echo: false
+include: false
+warning: false
+message: false
+fig.width: 7
+fig.height: 5
+---
+  
+  
+  
