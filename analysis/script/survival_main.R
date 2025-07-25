@@ -20,14 +20,6 @@ dat_surv <- cohort |>
     index_line
   )
 
-first_cpt <- get_first_cpt(ca_ind_dat = cohort, cpt_dat = cpt)
-
-dat_surv <- left_join(
-  dat_surv,
-  first_cpt,
-  by = c('record_id', 'ca_seq')
-)
-
 reg <- readr::read_csv(
   here('data-raw', 'PANC', 'regimen_cancer_level_dataset.csv')
 )
@@ -50,27 +42,19 @@ dat_surv <- dat_surv |>
       ca_seq,
       regimen_number,
       os_g_status,
-      tt_os_g_days
+      tt_os_g_days,
+      pfs_i_g_status,
+      tt_pfs_i_g_days
     ),
     by = c('record_id', 'ca_seq', 'regimen_number'),
     relationship = 'one-to-one'
   )
 
-dat_surv %<>%
-  mutate(
-    reg_cpt_days = dx_cpt_rep_days - dx_reg_start_int
-  )
-
-dat_surv <- remove_trunc_gte_event(
-  dat_surv,
-  trunc_var = 'reg_cpt_days',
-  event_var = 'tt_os_g_days'
-)
 
 # we're in cancer so we bullheadedly use months:
 dat_surv %<>%
   mutate(
-    reg_cpt_mos = reg_cpt_days / 30.4,
+    tt_pfs_i_g_mos = tt_pfs_i_g_days / 30.4,
     tt_os_g_mos = tt_os_g_days / 30.4
   )
 
@@ -78,8 +62,7 @@ dat_surv %<>%
 surv_obj_os <- with(
   dat_surv,
   Surv(
-    time = reg_cpt_mos,
-    time2 = tt_os_g_mos,
+    time = tt_os_g_mos,
     event = os_g_status
   )
 )
@@ -93,7 +76,6 @@ gg_os <- plot_one_survfit(
     nrow(dat_surv),
     ")"
   ),
-  plot_subtitle = "Adjusted for delayed entry (independent)",
   x_breaks = seq(0, 500, by = 1),
   x_title = "Months",
   x_exp = 0.03
@@ -126,14 +108,65 @@ gt_surv_times <- gtsummary::tbl_survfit(
   label_header = "Month {time}"
 )
 
-gt_surv_times
-
 
 model_bundle <- c(
   model_bundle,
   gt_med_surv = list(gt_median_surv),
   gt_surv_times = list(gt_surv_times)
 )
+
+
+# Repeat for PFS:
+surv_obj_pfs <- with(
+  dat_surv,
+  Surv(
+    time = tt_pfs_i_g_mos,
+    event = pfs_i_g_status
+  )
+)
+
+gg_pfs <- plot_one_survfit(
+  dat = dat_surv,
+  surv_form = surv_obj_pfs ~ 1,
+  plot_title = paste0(
+    "PFS-I from initiation of index therapy (n=",
+    nrow(dat_surv),
+    ")"
+  ),
+  x_breaks = seq(0, 500, by = 1),
+  x_title = "Months",
+  x_exp = 0.03
+) +
+  add_confidence_interval() +
+  coord_cartesian(xlim = c(0, 1.5 * 12)) +
+  theme(
+    panel.grid.minor = element_blank()
+  )
+
+surv_table_pfs <- survfit(
+  data = dat_surv,
+  surv_obj_pfs ~ 1,
+)
+
+gt_median_pfs <- gtsummary::tbl_survfit(
+  surv_table_pfs,
+  probs = 0.5,
+  label_header = "**Median PFS-I**"
+)
+
+gt_surv_times_pfs <- gtsummary::tbl_survfit(
+  surv_table_pfs,
+  times = seq(3, 12, by = 3),
+  label_header = "Month {time}"
+)
+
+model_bundle <- c(
+  model_bundle,
+  gg_pfs = list(gg_pfs),
+  gt_med_pfs = list(gt_median_pfs),
+  gt_pfs_times = list(gt_surv_times_pfs)
+)
+
 
 readr::write_rds(
   model_bundle,

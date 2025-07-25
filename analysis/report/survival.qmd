@@ -49,7 +49,7 @@ geno_compare_bundle <- readr::read_rds(
 )
 ```
 
-## Primary analysis
+## Overall survival
 
 The primary analysis for this stage of the study is a one-arm KM estimate of overall survival (95% CI).  There are `r nrow(main_model_bundle$dat_surv)` cases which contribute risk time to this analysis.  The following table and figure show these numbers, along with a table of survival percentages at some select times:
 
@@ -79,7 +79,7 @@ main_model_bundle$gt_surv_times
 - The graph is truncated at 18 months to show the region of high activity - actual tail goes on for years.
 
 
-## Genomic comparsions
+## Genomic OS comparisons
 
 We received a request to make two comparisons if time permitted:
 
@@ -101,3 +101,28 @@ geno_compare_bundle$gt_median_surv_1
 geno_compare_bundle$gg_os_geno_2
 geno_compare_bundle$gt_median_surv_2
 ```
+
+
+## Progression-free survival
+
+In GENIE PFS can be calculated by requiring progression by imaging, med onc notes, either or both.  Owing to our previous conversations that the Astellas trial is an imaging-based endeavor, our calculation here is based on imaging only.  In general we would recommend the use of PFS I-and-M (requiring both imaging and medical oncologist assessement for progression), due to the superior correlation with overall survival.  This is discussed for NSCLC in <https://doi.org/10.1001/jamanetworkopen.2021.17547>.
+
+
+```{r}
+#| include: true
+#| fig-height: 4
+
+main_model_bundle$gg_pfs
+```
+
+```{r}
+#| include: true
+main_model_bundle$gt_med_pfs
+```
+
+
+```{r}
+#| include: true
+main_model_bundle$gt_pfs_times
+```
+
