@@ -32,13 +32,13 @@ purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 
 This report examines overall survival in the cohort detailed in the `cohort_build` report.  These people meet the criteria of the Astellas study to the extent that we're able to check/match them.
 
-In the GENIE project, participants only enter the cohort once they have a high-throughput genetic sequencing (aka next-generation sequencing) report.  Because the index time (in this case, from second or third line therapy) can occur before that report, this creates a potential source of immortal time bias.  Specifically, a person would hypothetically be at risk for the event (death) while not yet contributing to the at-risk population.  Statistically the time of first NGS test is referred to as a "left truncation" variable.
+This cohort is now limited to participants who have an NGS result back indicating KRAS G12D+ before the start of the index therapy.  By definition, this eliminates anyone with delayed entry, so earlier discussions of left truncation are not longer relevant.  The other expected effects of this change are:
 
-Throughout this report we correct our Kaplan-Meier (KM) estimates for left truncation by assuming independent truncation and applying a risk set adjustment.  Independent truncation means the truncation time (time of first NGS) and event time (time from index therapy to death) are not related.  There are tests for this, but the statistical methods available if this assumption is violated are much more difficult to use, fit, and assess, so the interventions available in for a violation are limited. In general metastatic (or later stage) cohorts tend to have fewer problems than early stage cohorts, and pancreatic tends to be better than other cancers due to the shorter survival times (<https://doi.org/10.1001/jamanetworkopen.2020.6976>).
+  - Smaller cohort
+  - People who have not received an NGS test by 2L metatstatic disease are more likely to be experience a lower standard of care.  We cannot confirm this empirically in GENIE.
+  - As a result of the above, the OS estimates here are longer.
 
-Censoring is also assumed to be independent in this cohort.
-
-Failure to adjust for left truncation in GENIE (and other datasets with a similar bias) typically inflates survival times to be higher than the truth.
+There is a section which provides risk set adjusted analyses (on the larger cohort which may or may not have NGS resulted at the time of index therapy), showing the effect of this change.
 
 ```{r}
 main_model_bundle <- readr::read_rds(
@@ -71,12 +71,6 @@ main_model_bundle$gt_med_surv
 main_model_bundle$gt_surv_times
 ```
 
-**Notes:**
-
-- The at-risk population can go up with risk set adjusted left-truncated survival data.  This may or may not appear in the graph for this cohort with the short survival times.
-- The number in the KM graph is slightly lower than the attrition table.  This is due to the loss of some subjects whose NGS time is greater than their survival time (and thus contribute no at-risk time).  This is an expected occurrence due to the lag between order an NGS test and receiving the results - people can die in this interval.
-- There is a low amount of censoring here, which weakens the power of the independent censoring assumption.
-- The graph is truncated at 18 months to show the region of high activity - actual tail goes on for years.
 
 
 ## Genomic OS comparisons
@@ -84,7 +78,7 @@ main_model_bundle$gt_surv_times
 We received a request to make two comparisons if time permitted:
 
 - Those with KRAS G12D mutations, compared to those who only have other G12 mutation ("G12[*]").
-- Those with KRAS G12D mutations, compared to those who have no G12 mutations of any kind.  We will denote this as wild type (WT) to align with the sponsor wording, but note that this does not mean they have no KRAS variants.
+- Those with KRAS G12D mutations, compared to those who have no G12 mutations of any kind.  We will denote this as "no G12D", as they could have other KRAS mutations.
 
 These are shown below, with little difference in survival based on genomics.  These cohorts are built in the same way as the main analysis, just skipping the KRAS G12D+ requirement.  The tables show 95% confidence intervals for median survival.
 

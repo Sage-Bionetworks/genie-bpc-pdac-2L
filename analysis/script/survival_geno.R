@@ -39,7 +39,7 @@ cohort <- cohort %>%
     ),
     g12d_vs_wt = case_when(
       alt_g12d ~ "G12D",
-      no_kras_g12 ~ "WT",
+      no_kras_g12 ~ "no G12",
       T ~ NA_character_
     )
   )
@@ -59,17 +59,6 @@ dat_surv <- cohort |>
     no_invest_to_index,
     index_line
   )
-
-first_cpt <- get_first_cpt(
-  ca_ind_dat = distinct(select(cohort, record_id, ca_seq)),
-  cpt_dat = cpt
-)
-
-dat_surv <- left_join(
-  dat_surv,
-  first_cpt,
-  by = c('record_id', 'ca_seq')
-)
 
 reg <- readr::read_csv(
   here('data-raw', 'PANC', 'regimen_cancer_level_dataset.csv')
@@ -99,29 +88,17 @@ dat_surv <- dat_surv |>
     relationship = 'many-to-one' # now that we can have two copies of one person.
   )
 
-dat_surv %<>%
-  mutate(
-    reg_cpt_days = dx_cpt_rep_days - dx_reg_start_int
-  )
-
-dat_surv <- remove_trunc_gte_event(
-  dat_surv,
-  trunc_var = 'reg_cpt_days',
-  event_var = 'tt_os_g_days'
-)
 
 # months are a silly unit to use, but here we go:
 dat_surv %<>%
   mutate(
-    reg_cpt_mos = reg_cpt_days / 30.4,
     tt_os_g_mos = tt_os_g_days / 30.4
   )
 
 surv_obj_os <- with(
   dat_surv,
   Surv(
-    time = reg_cpt_mos,
-    time2 = tt_os_g_mos,
+    time = tt_os_g_mos,
     event = os_g_status
   )
 )
@@ -187,7 +164,3 @@ readr::write_rds(
   model_bundle,
   here('data', 'survival', 'geno_comp_bundle.rds')
 )
-
-# Relevant comparator:
-# https://pmc.ncbi.nlm.nih.gov/articles/PMC6962478/
-# 7.3 mo (5.3, 9.3)

@@ -14,6 +14,10 @@ source(here('analysis', 'script', 'progression.R'))
 source(here('analysis', 'script', 'cpt_itherapy_timing.R'))
 # Uses the outputs from all of those:
 source(here('analysis', 'script', 'build_cohort.R'))
+# Two parallel versions of that script (hacky way to do this but it works):
+source(here('analysis', 'script', 'build_cohort_no_kras.R'))
+# This is not currently required:
+# source(here('analysis', 'script', 'build_cohort_no_prog.R'))
 source(here('analysis', 'script', 'baseline_table.R'))
 source(here('analysis', 'script', 'sites_of_met_at_index.R'))
 
@@ -29,7 +33,6 @@ fs::file_move(
 
 # Run the relevant survival scripts:
 source(here('analysis', 'script', 'survival_main.R'))
-source(here('analysis', 'script', 'build_cohort_no_kras.R'))
 source(here('analysis', 'script', 'survival_geno.R'))
 
 quarto::quarto_render(

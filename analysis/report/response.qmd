@@ -288,8 +288,10 @@ resp_code_trunc_dt
 
 
 
-## Questions
+## Notes/decisions
 
-- Mixed response - should it be considered equivalent to SD?  Affects both confirmed response definition and BOR definition.  Currently mixed response effectively acts like a progression, not counting as either a confirmation of response or as "padding" while waiting for something more definitive.
-- Should those people with only non-evaluable scans after index therapy be included in the denominator for ORR?  Currently they are.  It's only 3 people, but I think this comes down to the trial (which may not have NE scans).
-- In the case where a person switches therapy, we count any scans done on that day.  For example, if someone started a therapy at day 0, and switched therapy on day 100, we still consider a scan on day 100 to be indicative of response/not to the therapy started on day 0.  In fact, it seems most plausible to me that the switch was prompted by a lack of response recorded on that day.  This does actually affect the inclusion of 4 scans, which may or may not alter the results.
+Three choices we reviewed and confirmed on July 21, 2025:
+
+- Mixed response is essentially treated as equivalent to PD for the purposes of BOR and confirming responses.  
+- People with only NE scans after baseline (2) are currently included in the denominator for ORR.  
+- In the case where a person switches therapy, we count any scans done on that day.  For example, if someone started a therapy at day 0, and switched therapy on day 100, we still consider a scan on day 100 to be indicative of response/not to the therapy started on day 0.  In fact, it seems most plausible to me that the switch was prompted by a lack of response recorded on that day.

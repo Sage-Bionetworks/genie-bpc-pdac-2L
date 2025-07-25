@@ -30,7 +30,6 @@ purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 
 
 ```{r}
-
 theme_gtsummary_compact(font_size = 12)
 theme_gtsummary_language("en", big.mark = "") 
 ```
@@ -38,7 +37,7 @@ theme_gtsummary_language("en", big.mark = "")
 
 ## Introduction
 
-This report addresses the feasibility of forming a cohort.  Specifically, the goal is finding a suitable control arm foran  Astellas study of second line therapies in metastatic pancreatic ductal adenocarcinoma (PDAC).  We will leverage the existing curation in the pancreatic BPC (v1.2-consoritum) cohort, with plans to curate images further if the initial submission goes well.
+This report addresses the feasibility of forming a cohort.  The goal cohort is finding a suitable control arm for an Astellas study of second line therapies in metastatic pancreatic ductal adenocarcinoma (PDAC).  We will leverage the existing curation in the pancreatic BPC (v1.2-consoritum) cohort.  Further curation may be needed if the initial submission goes well.
 
 ## Attrition table
 
@@ -53,7 +52,7 @@ flow_track_ft <- flow_track %>%
   mutate(n = map_int(pt_dat, nrow)) %>%
   select(message, n) %>%
   flextable() %>%
-  set_header_labels(message = "Cohort description", n = "n") %>%
+  set_header_labels(message = "Condition", n = "n") %>%
   theme_booktabs() %>%
   align(j = "n", align = "right") %>%
   fontsize(size = 10) %>%
@@ -72,11 +71,12 @@ Details:
 - **US sites only** Eliminated UHN (Canada) from the cohort.
 - **Only one cancer** The only cancer these people had is the pancreatic cancer that qualifies them for the cohort.  Only about 30 people had multiple cancers with pancreatic first, so it's almost certainly not worth it to open the can of worms that comes with trying to figure out which therapy counts for which cancer.
 - **Met dx. (anytime)** Limits to those who had a metastatic diagnosis at some point.  We will check the timing of the metastatic diagnosis with the index therapy later.
-- **KRAS G12D+** Had the mutation of interest in at least one NGS test (see note below on timing).
+- **KRAS G12D+** Had the mutation of interest in at least one NGS test (again, we check timing below).
 - **1L gem/5FU-based** - The first line of therapy includes either gemcitabine or 5-FU (Fluorouracil).  Using the wording in inclusion criterion #3 from the protocol, lines of therapy start with this exposure even if the exposure is before metastasis.
 - **Met @ index line** - the person is metastatic at the index therapy, which is either one or two therapies after the gem/5fu exposure.  That is, the index line is 2L or 3L.
 - **No investigational** - the person had no investigational agents included in any therapies from the gem/5-FU to the index therapy.
-- **Documented prog after 1L** - complicated, see *Progression* section below.
+- **Documented prog after 1L** - Progression is defined as having at least one radiologist summary indicating a worsening from the start of 1L to the start of the index therapy.
+- **G12D+ result before index** - This tests the timing of the G12D+ results relative to the index line.  Each person must have at least one report (result) showing they have a KRAS G12D alteration on or before the start of the index therapy.  See below.
 
 
 
@@ -101,11 +101,6 @@ gtsummary::tbl_summary(
 )
 ```
 
-
-
-## Progression
-
-Progression is defined as having at least one radiologist summary indicating a worsening.  See change notes below on this.
 
 ## Lines
 
@@ -185,6 +180,8 @@ gtsummary::tbl_summary(
 - Jul 2025: The first draft of our progression algorithm allowed for progression defined by a drug switch, only in participants that had no medical oncologist or imaging assessments after starting first line therapy.  This has been removed (**Impact: ~-3 cases**).
 - Jul 2025: Previously we only included progression events which occurred >=6 weeks and <=6 months after 1L therapy.  After learning this does not match the Astellas protocol we removed this (**Impact: ~+30 cases, OS longer**).
 - Jul 2025: Originally progression was determined by either medical oncologist or imaging note.  We changed to just imaging to align with the target trial progression definition and the definition of response, which both use imaging only (**Impact:-18 cases**).
+- Jul 2025:  Added the requirement that KRAS G12D+ results be back before the start of the index therapy.
+  - **Impact:** -41 cases, left truncation is no longer present by definition, OS estimates are longer.  Aligns PFS and OS cohorts.
 
 
 ## Miscellaneous notes
