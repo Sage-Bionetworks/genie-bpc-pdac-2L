@@ -74,9 +74,6 @@ resp <- readr::read_rds(
 )
 ```
 
-```{r}
-
-```
 
 
 ## Results

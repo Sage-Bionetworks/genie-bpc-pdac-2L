@@ -29,8 +29,6 @@ fs::file_move(
 
 # Run the relevant survival scripts:
 source(here('analysis', 'script', 'survival_main.R'))
-# source(here('analysis', 'script', 'survival_verified_prog.R'))
-
 source(here('analysis', 'script', 'build_cohort_no_kras.R'))
 source(here('analysis', 'script', 'survival_geno.R'))
 

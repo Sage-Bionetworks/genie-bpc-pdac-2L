@@ -54,8 +54,6 @@ dat_surv <- cohort |>
     g12d_vs_wt,
     record_id,
     ca_seq,
-    stage_dx_iv,
-    dmets_stage_i_iii,
     line1_gem_or_fluoro,
     line2or3_as_met,
     no_invest_to_index,

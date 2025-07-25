@@ -44,9 +44,6 @@ Failure to adjust for left truncation in GENIE (and other datasets with a simila
 main_model_bundle <- readr::read_rds(
   here('data', 'survival', 'main_model_bundle.rds')
 )
-prog_compare_bundle <- readr::read_rds(
-  here('data', 'survival', 'prog_compare_bundle.rds')
-)
 geno_compare_bundle <- readr::read_rds(
   here('data', 'survival', 'geno_comp_bundle.rds')
 )
@@ -80,21 +77,6 @@ main_model_bundle$gt_surv_times
 - The number in the KM graph is slightly lower than the attrition table.  This is due to the loss of some subjects whose NGS time is greater than their survival time (and thus contribute no at-risk time).  This is an expected occurrence due to the lag between order an NGS test and receiving the results - people can die in this interval.
 - There is a low amount of censoring here, which weakens the power of the independent censoring assumption.
 - The graph is truncated at 18 months to show the region of high activity - actual tail goes on for years.
-
-
-## Progression confirmation
-
-As an alternate analysis we consider what happens if we drop the last line in the cohort building table (verifying progression).  The cohort labelled "Prog. verified" is the analysis above, and the cohort labelled "Prog. assumed" meets all criteria except for verified progression.
-
-```{r}
-#| include: true
-prog_compare_bundle$gg_os
-```
-
-**Notes:**
-
-- The cohort without verified progression has dramatically longer survival than those with verified progression.  
-- While in general it's expected that a confirmation of worsening health (progression) would be associated with shorter survival, this shows that this cohort is probably not a suitable control arm for one where progression is verified in a single-arm trial.  After discussion with Astellas we're all in agreement there.
 
 
 ## Genomic comparsions
