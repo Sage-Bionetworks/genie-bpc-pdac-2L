@@ -5,21 +5,167 @@ author: "Alex Paynter"
 date: "`r format(Sys.Date(), '%d %b %Y')`"
 editor_options:
   quarto:
-  chunk_output_type: console
+    chunk_output_type: console
 format:
   html:
-  embed-resources: true
-toc: true
-toc-depth: 4
-theme: sandstone 
+    embed-resources: true
+    toc: true
+    toc-depth: 4
+    theme: sandstone 
 execute:
   echo: false
-include: false
-warning: false
-message: false
-fig.width: 7
-fig.height: 5
+  include: false
+  warning: false
+  message: false
+  fig.width: 7
+  fig.height: 5
 ---
   
-  
-  
+
+```{r}
+library(fs)
+library(purrr)
+library(here)
+purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
+```
+
+## Introduction
+
+This report lists out cases to be visually confirmed in cBioPortal.  The idea is that each link is a query on one person, and with a little bit of additional information (which drug is index) you can check that they meet the key entry and response criteria.
+
+This report is intended for internal (Alex) use, but if you want to spend some time checking things over I'm fully supportive - reach out if you have problems.
+
+```{r}
+cohort <- readr::read_rds(
+  here('data', 'cohort_prog_verified.rds')
+)
+resp <- readr::read_rds(
+  here('data', 'response', 'responses.rds')
+)
+
+chk_dat <- cohort %>%
+  select(
+    record_id,
+    index_drugs = regimen_drugs
+  ) %>%
+  left_join(
+    .,
+    select(resp, record_id, n_scans_eval, resp_cat, resp_cat_conf, bor),
+    by = 'record_id'
+  )
+
+chk_dat %<>%
+  mutate(
+    chk_cat = case_when(
+      resp_cat_conf ~ "con_res",
+      resp_cat ~ "uncon_res",
+      n_scans_eval == 0 ~ "ne_scans_only",
+      !resp_cat ~ "non_res",
+      T ~ "no_scans" # could also look for n_scans_eval being NA.
+    ) 
+  )
+
+chk_dat %<>%
+  mutate(
+    cbio_q = output_cbio_lines(record_id, return_vec = T)
+  )
+```
+
+```{r}
+ # This needs some fixing.
+line_outter <- function(dat) {
+  for (i in 1:nrow(dat))
+    cat(paste0(dat[[i, "record_id"]], "\n\n"),
+        paste0("    - ", dat[[i, "index_drugs"]], "\n"),
+        paste0("    - <", dat[[i, 'cbio_q']], ">\n\n"))
+}
+```
+
+
+## Section 1: Response strata 
+
+Categories:
+
+- Confirmed responders
+- Unconfirmed responders
+- Non-responders
+- NE scans only
+- No scans
+
+What I want to check:
+
+- Everyone has a progression before their index line.
+- Everyone's response category looks correct.
+
+For each person below we write the subject ID, index drug line (because you can't see that in cBio), and a link to a cbio query for that person's clinical view.
+
+### Confirmed responders
+
+```{r}
+#| output: true
+#| include: true
+
+set.seed(23048)
+
+chk_dat %>%
+  filter(chk_cat %in% "con_res") %>%
+  dplyr::sample_frac(1) %>%
+  line_outter
+```
+
+
+### Unconfirmed responders
+
+```{r}
+#| output: true
+#| include: true
+
+chk_dat %>%
+  filter(chk_cat %in% "uncon_res") %>%
+  dplyr::sample_frac(1) %>%
+  line_outter
+```
+
+
+### Non-responders
+
+```{r}
+#| output: true
+#| include: true
+
+chk_dat %>%
+  filter(chk_cat %in% "non_res") %>%
+  dplyr::sample_frac(1) %>%
+  line_outter
+```
+
+
+### No scans
+
+```{r}
+#| output: true
+#| include: true
+
+chk_dat %>%
+  filter(chk_cat %in% "no_scans") %>%
+  dplyr::sample_frac(1) %>%
+  line_outter
+```
+
+### NE scans only
+
+```{r}
+#| output: true
+#| include: true
+
+chk_dat %>%
+  filter(chk_cat %in% "ne_scans_only") %>%
+  dplyr::sample_frac(1) %>%
+  line_outter
+```
+
+
+## Other stuff
+
+### non-Progressers?
+

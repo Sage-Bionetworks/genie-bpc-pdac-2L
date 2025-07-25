@@ -11,6 +11,7 @@ source(here('analysis', 'script', 'process_genomics.R'))
 source(here('analysis', 'script', 'create_lines.R'))
 source(here('analysis', 'script', 'evaluate_lines.R'))
 source(here('analysis', 'script', 'progression.R'))
+source(here('analysis', 'script', 'cpt_itherapy_timing.R'))
 # Uses the outputs from all of those:
 source(here('analysis', 'script', 'build_cohort.R'))
 source(here('analysis', 'script', 'baseline_table.R'))
@@ -28,7 +29,7 @@ fs::file_move(
 
 # Run the relevant survival scripts:
 source(here('analysis', 'script', 'survival_main.R'))
-source(here('analysis', 'script', 'survival_verified_prog.R'))
+# source(here('analysis', 'script', 'survival_verified_prog.R'))
 
 source(here('analysis', 'script', 'build_cohort_no_kras.R'))
 source(here('analysis', 'script', 'survival_geno.R'))

@@ -7,6 +7,16 @@ ca_ind <- readr::read_csv(
   here('data-raw', 'PANC', 'cancer_level_dataset_index.csv')
 )
 cohort <- ca_ind
+
+# select just the stuff we need:
+cohort %<>%
+  select(
+    cohort,
+    record_id,
+    institution,
+    ca_seq
+  )
+
 # flow_track monitors attrition at each step for us.
 flow_track <- flow_record_helper(cohort, "BPC PANC v1.2")
 
@@ -43,6 +53,8 @@ cohort <- inner_join(
 )
 flow_track %<>% flow_record_helper(cohort, "Met dx. (anytime)", .)
 
+
+# First we'll look at people who had KRAS G12 at any time:
 sample_kras_g12d <- readr::read_rds(
   here('data', 'genomic', 'samp_kras_g12d.rds')
 )
@@ -77,6 +89,11 @@ cohort <- left_join(
 cohort %<>% filter(line1_gem_or_fluoro)
 flow_track %<>% flow_record_helper(cohort, "1L gem/5FU-based", .)
 
+prog_flags <- readr::read_rds(here('data', 'prog_flags.rds'))
+prog_flags %<>% filter(prog_in_range)
+cohort %<>% filter(record_id %in% prog_flags$record_id)
+flow_track %<>% flow_record_helper(cohort, "Documented prog after 1L", .)
+
 
 cohort %<>% filter(line2or3_as_met)
 flow_track %<>% flow_record_helper(cohort, "Met @ index line", .)
@@ -86,16 +103,36 @@ cohort %<>% filter(no_invest_to_index)
 flow_track %<>% flow_record_helper(cohort, "No investigational", .)
 
 
-readr::write_rds(
-  cohort,
-  here('data', 'cohort_prog_not_verified.rds')
+# Then we'll check that it was path/ordered/resulted before index line.
+cpt_ind_reg_timing <- readr::read_rds(
+  here('data', 'drug', 'cpt_index_reg_timing.rds')
 )
-
-
-prog_flags <- readr::read_rds(here('data', 'prog_flags.rds'))
-prog_flags %<>% filter(prog_in_range)
-cohort %<>% filter(record_id %in% prog_flags$record_id)
-flow_track %<>% flow_record_helper(cohort, "Documented prog after 1L", .)
+# for each person who has such a case, get their first sample:
+cohort <- cpt_ind_reg_timing %>%
+  filter(
+    kras_g12d,
+    report_lte_reg
+  ) %>%
+  group_by(record_id) %>%
+  arrange(dob_cpt_report_days) %>%
+  slice(1) %>%
+  ungroup(.) %>%
+  select(
+    record_id,
+    first_kras_pos_samp = cpt_genie_sample_id,
+    dob_path_proc_days,
+    dob_cpt_order_days,
+    dob_cpt_report_days,
+    path_lte_reg,
+    order_lte_reg,
+    report_lte_reg
+  ) %>%
+  inner_join(
+    cohort,
+    .,
+    by = 'record_id'
+  )
+flow_track %<>% flow_record_helper(cohort, "G12D+ result before index", .)
 
 readr::write_rds(
   flow_track,
@@ -122,45 +159,3 @@ readr::write_rds(
   cohort,
   here('data', 'cohort_prog_verified.rds')
 )
-
-#
-#
-#
-#
-# One additional check here, which is not a part of the main flow yet.
-# This should probably be it's own script but.... it's not.
-index_line_times <- select(cohort, record_id, index_line) %>%
-  left_join(
-    .,
-    select(lot, record_id, line_of_therapy, dx_reg_start_int),
-    by = c('record_id', index_line = 'line_of_therapy')
-  )
-first_g12d_pos <- cpt %>%
-  filter(cpt_genie_sample_id %in% sample_kras_g12d) %>%
-  group_by(record_id) %>%
-  mutate(
-    dx_cpt_ord_days = dx_cpt_rep_days - (dob_cpt_report_days - cpt_order_int)
-  ) %>%
-  summarize(
-    dx_first_kras_g12d_pos_rep = min(dx_cpt_rep_days, na.rm = T),
-    dx_first_kras_g12d_pos_ord = min(dx_cpt_ord_days, na.rm = T)
-  )
-
-index_line_times %<>%
-  left_join(
-    .,
-    first_g12d_pos,
-    by = 'record_id'
-  ) %>%
-  mutate(
-    pos_rep_before_index = dx_reg_start_int > dx_first_kras_g12d_pos_rep,
-    pos_ord_before_index = dx_reg_start_int > dx_first_kras_g12d_pos_ord
-  )
-
-readr::write_rds(
-  index_line_times,
-  here('data', 'drug', 'cpt_index_timing.rds')
-)
-
-# count(index_line_times, pos_rep_before_index)
-# count(index_line_times, pos_ord_before_index)

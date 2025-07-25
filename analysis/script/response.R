@@ -67,6 +67,18 @@ incl_img <- left_join(
     max_obs_time + 0.5 > dob_event_days
   )
 
+incl_img %<>%
+  mutate(
+    dob_index_start_int = min_obs_time - 1
+  )
+
+
+readr::write_rds(
+  incl_img,
+  here('data', 'response', 'incl_img.rds')
+)
+
+
 resp <- incl_img %>%
   add_response_levels(.) %>%
   group_by(record_id) %>%

@@ -1,6 +1,7 @@
 output_cbio_lines <- function(
   ids,
   file = NULL,
+  return_vec = F,
   cohort = 'panc_genie_bpc'
 ) {
   stub1 <- "https://genie-private.cbioportal.org/patient?studyId="
@@ -13,7 +14,9 @@ output_cbio_lines <- function(
     ids
   )
 
-  if (is.null(file)) {
+  if (return_vec) {
+    return(out_lines)
+  } else if (is.null(file)) {
     cat(paste0(out_lines, '\n'))
   } else {
     writeLines(out_lines, file)

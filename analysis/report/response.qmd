@@ -74,11 +74,100 @@ resp <- readr::read_rds(
 )
 ```
 
+```{r}
+
+```
+
+
 ## Results
 
 There were `r nrow(cohort)` people in our cohort which met eligibility criteria.  Of those, `r nrow(resp)` had at least one radiographic scan after initiation of index therapy, forming the denominator for ORR analyses below.  
 
+
+
+```{r}
+incl_img <- readr::read_rds(
+  here('data', 'response', 'incl_img.rds')
+)
+incl_img %<>%
+  mutate(
+    index_scan_days = dob_event_days - dob_index_start_int
+  ) 
+
+first_scans <- incl_img %>%
+  group_by(record_id) %>%
+  summarize(
+    first_scan = min(index_scan_days, na.rm = T)
+  )
+
+first_scans_eval <- incl_img %>%
+  group_by(record_id) %>%
+  filter(!is.na(status_change)) %>%
+  summarize(
+    first_eval_scan = min(index_scan_days, na.rm = T)
+  )
+
+first_scans <- full_join(
+  first_scans,
+  first_scans_eval,
+  by = 'record_id'
+)
+
+  
+  
+```
+
+
+
 ### Placeholder:  Stats on time to scans
+
+We will do this with KM methods later.  For now we offer the empirical stats describing only those who had scans and contribute to the numbers below:
+
+```{r}
+#| include: true
+first_scans %>%
+  select(
+    `Time to first scan (days)` = first_scan,
+    `Time to first scan with status (days)` = first_eval_scan) %>%
+  gtsummary::tbl_summary(.)
+```
+
+Unknown above is the people who have only not-evaluable scans after index therapy.
+
+
+
+
+
+
+```{r}
+
+resp_gt <- resp %>%
+  mutate(bor = factor(bor,
+                      levels = c("PR", "SD", "MR", "PD", "NE"))) %>%
+  select(
+    n_scans,
+    n_scans_eval,
+    `Best overall response` = bor
+  ) %>%
+  gtsummary::tbl_summary(.) 
+```
+
+
+
+
+### Best overall response + scan stats
+
+The following table shows the number of scans, number of evaluable scans and the best overall response.  The priority order on BOR is the order of the table, so anyone with a "PR" response in the followup window would not be classed into a lower category (for example).
+
+```{r}
+#| include: true
+
+resp_gt
+```
+
+
+
+
 
 ```{r}
 resp_ci <- binom::binom.confint(
@@ -114,30 +203,6 @@ The following table shows the number of responders and non-responders, along wit
 ```{r}
 #| include: true
 resp_ci_ft
-```
-
-
-```{r}
-bor_ft <-  resp %>%
-  mutate(bor = factor(bor,
-                      levels = c("PR", "SD", "MR", "PD", "NE"))) %>%
-  tabyl(bor) %>%
-  mutate(`n (%)` = glue("{n} ({formatC(percent*100, format = 'f', digits = 1)}%)")) %>%
-  select(bor, `n (%)`) %>%
-  rename(`Best overall response` = bor) %>%
-  flextable(.) %>%
-  align(j = 2, align = 'right', part = "all") %>%
-  autofit(.)
-```
-
-### Best overall response
-
-The following table breaks the best overall response down into finer categories.  The priority order is the order of the table, so anyone with a "PR" response in the followup window would not be classed into a lower category.
-
-```{r}
-#| include: true
-
-bor_ft
 ```
 
 

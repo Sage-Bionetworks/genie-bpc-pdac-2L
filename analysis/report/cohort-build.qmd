@@ -50,7 +50,7 @@ flow_track <- readr::read_rds(
 )
 
 flow_track_ft <- flow_track %>%
-  mutate(n = map_int(dat, nrow)) %>%
+  mutate(n = map_int(pt_dat, nrow)) %>%
   select(message, n) %>%
   flextable() %>%
   set_header_labels(message = "Cohort description", n = "n") %>%
@@ -78,21 +78,7 @@ Details:
 - **No investigational** - the person had no investigational agents included in any therapies from the gem/5-FU to the index therapy.
 - **Documented prog after 1L** - complicated, see *Progression* section below.
 
-```{r}
-cpt_index_timing <- readr::read_rds(here('data', 'drug', 'cpt_index_timing.rds'))
-n_rep_before_index <- cpt_index_timing %>%
-  filter(pos_rep_before_index) %>%
-  nrow
-n_ord_before_index <- cpt_index_timing %>%
-  filter(pos_ord_before_index) %>%
-  nrow
-```
 
-
-*Note on NGS timing:* We had some questions about the timing of KRAS G12D+ results and index therapy start times.  Two numbers on this subject:
-
-- The number of people who have their KRAS G12D+ test result before they begin their index therapy (and meet all other criteria in this list) is `r n_rep_before_index`.  
-- The number who had a test ordered which would eventually come back positive is `r n_ord_before_index`.
 
 ```{r}
 demo_dat <- readr::read_rds(
